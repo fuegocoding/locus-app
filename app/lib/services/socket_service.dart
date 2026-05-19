@@ -4,7 +4,6 @@ import '../models/user.dart';
 
 class SocketService {
   io.Socket? _socket;
-  String? _token;
   final _presenceController = StreamController<List<PresenceUpdate>>.broadcast();
   final _volumeController = StreamController<Map<String, double>>.broadcast();
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
@@ -20,7 +19,6 @@ class SocketService {
   bool get connected => _socket?.connected ?? false;
 
   void connect(String serverUrl, String token) {
-    _token = token;
     _socket = io.io(
       serverUrl,
       io.OptionBuilder()
@@ -30,13 +28,8 @@ class SocketService {
           .build(),
     );
 
-    _socket!.on('connect', (_) {
-      print('[Socket] Connected');
-    });
-
-    _socket!.on('disconnect', (_) {
-      print('[Socket] Disconnected');
-    });
+    _socket!.on('connect', (_) {});
+    _socket!.on('disconnect', (_) {});
 
     _socket!.on('presence:neighbors', (data) {
       final list = (data as List).map((p) => PresenceUpdate.fromJson(p)).toList();

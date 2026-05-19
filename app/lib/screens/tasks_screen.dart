@@ -157,7 +157,6 @@ class TasksScreen extends StatelessWidget {
     required String subtitle,
     required int cost,
   }) {
-    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(

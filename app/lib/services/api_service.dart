@@ -4,32 +4,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   final String baseUrl;
-  String? _token;
+  String? authToken;
 
   ApiService({required this.baseUrl});
 
   Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token');
+    authToken = prefs.getString('auth_token');
   }
 
   Future<void> saveToken(String token) async {
-    _token = token;
+    authToken = token;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
   }
 
   Future<void> clearToken() async {
-    _token = null;
+    authToken = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
   }
 
-  bool get hasToken => _token != null;
+  bool get hasToken => authToken != null;
 
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    if (_token != null) 'Authorization': 'Bearer $_token',
+    if (authToken != null) 'Authorization': 'Bearer $authToken',
   };
 
   Future<Map<String, dynamic>> sendVerificationCode(String phone) async {
@@ -55,7 +55,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getProfile() async {
-    if (_token == null) return null;
+    if (authToken == null) return null;
     final response = await http.get(
       Uri.parse('$baseUrl/api/auth/me'),
       headers: _headers,

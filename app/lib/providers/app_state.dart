@@ -87,7 +87,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _connectSocket() {
-    socketService.connect('http://10.0.2.2:3001', apiService._token ?? '');
+    socketService.connect('http://10.0.2.2:3001', apiService.authToken ?? '');
 
     socketService.presenceStream.listen((updates) {
       for (final update in updates) {

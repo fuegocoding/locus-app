@@ -63,8 +63,9 @@ class LocationService {
         autoStart: false,
         isForegroundMode: true,
         notificationChannelId: 'locus_location',
-        notificationTitle: 'Locus is active',
-        notificationText: 'Sharing your location',
+        foregroundServiceNotificationId: 888,
+        initialNotificationTitle: 'Locus is active',
+        initialNotificationContent: 'Sharing your location',
       ),
       iosConfiguration: IosConfiguration(
         autoStart: false,

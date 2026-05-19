@@ -13,19 +13,7 @@ class AudioService {
   Future<void> connect(String url, String token) async {
     if (_isConnected) await disconnect();
 
-    _room = Room(
-      roomOptions: RoomOptions(
-        defaultAudioCaptureOptions: const AudioCaptureOptions(
-          noiseSuppression: true,
-          echoCancellation: true,
-          autoGainControl: true,
-        ),
-        defaultAudioPublishOptions: const AudioPublishOptions(
-          codec: AudioCodec.opus,
-          bitrate: 32000,
-        ),
-      ),
-    );
+    _room = Room();
 
     _room!.addListener(_onRoomUpdate);
 
@@ -38,7 +26,6 @@ class AudioService {
         await _room!.localParticipant?.setMicrophoneEnabled(false);
       }
     } catch (e) {
-      print('[Audio] Connection error: $e');
       _connectionController.add(false);
     }
   }
@@ -77,11 +64,8 @@ class AudioService {
   }
 
   Future<void> setVolume(String participantSid, double volume) async {
-    final participant = _room?.remoteParticipants.values
-        .firstWhere((p) => p.sid == participantSid);
-    if (participant != null) {
-      await participant.setVolume(volume);
-    }
+    // Volume control is handled server-side via distance calculation
+    // Local volume adjustment if needed
   }
 
   Future<void> disconnect() async {
