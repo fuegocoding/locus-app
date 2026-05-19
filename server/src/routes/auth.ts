@@ -91,7 +91,26 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
   }
 
   const user = JSON.parse(userData);
-  const allowedFields = ['displayName', 'avatar', 'vehicleTag', 'privacyMode'];
+
+  if (req.body.displayName) {
+    const newName = req.body.displayName.trim();
+    if (newName.length < 2 || newName.length > 30) {
+      res.status(400).json({ error: 'Display name must be 2-30 characters' });
+      return;
+    }
+    const existingId = await r.get(`locus:username:${newName.toLowerCase()}`);
+    if (existingId && existingId !== req.userId!) {
+      res.status(409).json({ error: 'Username already taken' });
+      return;
+    }
+    if (user.displayName) {
+      await r.del(`locus:username:${user.displayName.toLowerCase()}`);
+    }
+    await r.set(`locus:username:${newName.toLowerCase()}`, req.userId!);
+    user.displayName = newName;
+  }
+
+  const allowedFields = ['avatar', 'vehicleTag', 'privacyMode'];
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
       user[field] = req.body[field];
@@ -101,6 +120,18 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
 
   await r.hset('locus:users', req.userId!, JSON.stringify(user));
   res.json(user);
+});
+
+// Check username availability
+router.post('/check-username', async (req: Request, res: Response): Promise<void> => {
+  const { username } = req.body;
+  if (!username || username.trim().length < 2) {
+    res.json({ available: false, reason: 'Username must be at least 2 characters' });
+    return;
+  }
+  const r = getRedis();
+  const existing = await r.get(`locus:username:${username.trim().toLowerCase()}`);
+  res.json({ available: !existing });
 });
 
 // Get convoy by invite code

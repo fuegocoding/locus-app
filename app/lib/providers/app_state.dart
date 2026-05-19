@@ -6,7 +6,7 @@ import '../services/audio_service.dart';
 import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
-  final ApiService apiService = ApiService(baseUrl: 'http://10.0.2.2:3001');
+  final ApiService apiService = ApiService(baseUrl: 'http://localhost:3001');
   final SocketService socketService = SocketService();
   final LocationService locationService = LocationService();
   final AudioService audioService = AudioService();
@@ -15,21 +15,19 @@ class AppState extends ChangeNotifier {
   bool _isAuthenticated = false;
   String _mode = 'proximity';
   String? _convoyId;
-  double _latitude = 0;
-  double _longitude = 0;
-  double _speed = 0;
-  double _heading = 0;
+  double _latitude = 0, _longitude = 0, _speed = 0, _heading = 0;
   List<PresenceUpdate> _nearbyUsers = [];
   Map<String, double> _volumes = {};
   Map<String, bool> _speaking = {};
   Convoy? _currentConvoy;
   bool _micMuted = false;
-  bool _pushToTalk = true;
+  bool _pushToTalk = false;
   String? _error;
   bool _isLoading = false;
 
   User? get user => _user;
   bool get isAuthenticated => _isAuthenticated;
+  bool get hasProfile => _user != null && !_user!.displayName.startsWith('User_');
   String get mode => _mode;
   String? get convoyId => _convoyId;
   double get latitude => _latitude;
@@ -48,189 +46,69 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     await apiService.loadToken();
     if (apiService.hasToken) {
-      final profile = await apiService.getProfile();
-      if (profile != null) {
-        _user = User.fromJson(profile);
-        _isAuthenticated = true;
-        _connectSocket();
-      }
+      final p = await apiService.getProfile();
+      if (p != null) { _user = User.fromJson(p); _isAuthenticated = true; _connectSocket(); }
     }
     notifyListeners();
   }
 
-  Future<void> sendVerificationCode(String phone) async {
-    _isLoading = true;
-    notifyListeners();
-    await apiService.sendVerificationCode(phone);
-    _isLoading = false;
-    notifyListeners();
-  }
-
+  Future<void> sendVerificationCode(String phone) async { _isLoading = true; notifyListeners(); await apiService.sendVerificationCode(phone); _isLoading = false; notifyListeners(); }
   Future<bool> verifyCode(String phone, String code) async {
-    _isLoading = true;
-    notifyListeners();
-    final result = await apiService.verifyCode(phone, code);
-    if (result['token'] != null) {
+    _isLoading = true; notifyListeners();
+    final r = await apiService.verifyCode(phone, code);
+    if (r['token'] != null) {
       _isAuthenticated = true;
-      final profile = await apiService.getProfile();
-      if (profile != null) {
-        _user = User.fromJson(profile);
-      }
-      _connectSocket();
-      _isLoading = false;
-      notifyListeners();
-      return true;
+      final p = await apiService.getProfile(); if (p != null) _user = User.fromJson(p);
+      _connectSocket(); _isLoading = false; notifyListeners(); return true;
     }
-    _isLoading = false;
-    notifyListeners();
-    return false;
+    _isLoading = false; notifyListeners(); return false;
   }
-
+  Future<bool> checkUsername(String u) async => apiService.checkUsername(u);
+  Future<bool> updateProfile(String name) async {
+    _isLoading = true; notifyListeners();
+    final r = await apiService.updateProfile({'displayName': name});
+    if (r['displayName'] == name) { _user?.displayName = name; _isLoading = false; notifyListeners(); return true; }
+    _isLoading = false; notifyListeners(); return false;
+  }
   void _connectSocket() {
-    socketService.connect('http://10.0.2.2:3001', apiService.authToken ?? '');
-
-    socketService.presenceStream.listen((updates) {
-      for (final update in updates) {
-        final idx = _nearbyUsers.indexWhere((u) => u.userId == update.userId);
-        if (idx >= 0) {
-          _nearbyUsers[idx] = update;
-        } else {
-          _nearbyUsers.add(update);
-        }
-      }
+    socketService.connect('http://localhost:3001', apiService.authToken ?? '');
+    socketService.presenceStream.listen((ups) {
+      for (final u in ups) { final i = _nearbyUsers.indexWhere((x) => x.userId == u.userId); if (i >= 0) _nearbyUsers[i] = u; else _nearbyUsers.add(u); }
       notifyListeners();
     });
-
-    socketService.volumeStream.listen((volumeData) {
-      _volumes.addAll(volumeData);
+    socketService.volumeStream.listen((v) { _volumes.addAll(v); notifyListeners(); });
+    socketService.speakingStream.listen((s) { _speaking.addAll(s); notifyListeners(); });
+    socketService.convoyStream.listen((d) {
+      if (d['type'] == 'created' || d['type'] == 'joined') { if (d['convoy'] != null) _currentConvoy = Convoy.fromJson(d['convoy']); _mode = 'convoy'; _convoyId = _currentConvoy?.id; }
+      else if (d['type'] == 'left') { _currentConvoy = null; _convoyId = null; _mode = 'proximity'; }
       notifyListeners();
     });
-
-    socketService.speakingStream.listen((speakingData) {
-      _speaking.addAll(speakingData);
-      notifyListeners();
-    });
-
-    socketService.convoyStream.listen((data) {
-      if (data['type'] == 'created' || data['type'] == 'joined') {
-        if (data['convoy'] != null) {
-          _currentConvoy = Convoy.fromJson(data['convoy']);
-        }
-        _mode = 'convoy';
-        _convoyId = _currentConvoy?.id;
-      } else if (data['type'] == 'left') {
-        _currentConvoy = null;
-        _convoyId = null;
-        _mode = 'proximity';
-      }
-      notifyListeners();
-    });
-
-    socketService.errorStream.listen((err) {
-      _error = err;
-      notifyListeners();
-    });
+    socketService.errorStream.listen((e) { _error = e; notifyListeners(); });
   }
-
-  Future<bool> requestPermissions() async {
-    return locationService.requestPermissions();
-  }
-
+  Future<bool> requestPermissions() async => locationService.requestPermissions();
   void startLocation() {
     locationService.startLocationUpdates();
-    locationService.positionStream.listen((pos) {
-      _latitude = pos.latitude!;
-      _longitude = pos.longitude!;
-      _speed = pos.speed ?? 0;
-      _heading = pos.heading ?? 0;
-      socketService.updatePresence(
-        latitude: _latitude,
-        longitude: _longitude,
-        speed: _speed,
-        heading: _heading,
-      );
+    locationService.positionStream.listen((p) {
+      _latitude = p['latitude']!; _longitude = p['longitude']!; _speed = p['speed']!; _heading = p['heading']!;
+      socketService.updatePresence(latitude: _latitude, longitude: _longitude, speed: _speed, heading: _heading);
       notifyListeners();
     });
   }
-
-  void stopLocation() {
-    locationService.stopLocationUpdates();
-  }
-
-  Future<void> startBackgroundService() async {
-    await locationService.startBackgroundService();
-  }
-
-  void setMode(String mode) {
-    _mode = mode;
-    socketService.switchMode(mode, convoyId: _convoyId);
-    notifyListeners();
-  }
-
-  void createConvoy(String name) {
-    socketService.createConvoy(name, 'invite-only');
-  }
-
-  void joinConvoy(String inviteCode) {
-    socketService.joinConvoy(inviteCode);
-  }
-
-  void leaveConvoy() {
-    socketService.leaveConvoy();
-  }
-
-  void pinUser(String userId) {
-    socketService.pinUser(userId);
-  }
-
-  void unpinUser(String userId) {
-    socketService.unpinUser(userId);
-  }
-
-  void muteUser(String userId) {
-    socketService.muteUser(userId);
-  }
-
-  void blockUser(String userId) {
-    socketService.blockUser(userId);
-  }
-
-  void reportUser(String userId) {
-    socketService.reportUser(userId);
-  }
-
-  void toggleMic() {
-    _micMuted = !_micMuted;
-    socketService.toggleMic(_micMuted);
-    notifyListeners();
-  }
-
-  void setPushToTalk(bool enabled) {
-    _pushToTalk = enabled;
-    audioService.setPushToTalk(enabled);
-    notifyListeners();
-  }
-
-  void startSpeaking() {
-    socketService.pushToTalk(true);
-    audioService.startSpeaking();
-  }
-
-  void stopSpeaking() {
-    socketService.pushToTalk(false);
-    audioService.stopSpeaking();
-  }
-
-  void clearError() {
-    _error = null;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    socketService.disconnect();
-    locationService.dispose();
-    audioService.disconnect();
-    super.dispose();
-  }
+  void stopLocation() => locationService.stopLocationUpdates();
+  Future<void> startBackgroundService() async => locationService.startBackgroundService();
+  void setMode(String m) { _mode = m; socketService.switchMode(m, convoyId: _convoyId); notifyListeners(); }
+  void createConvoy(String n) => socketService.createConvoy(n, 'invite-only');
+  void joinConvoy(String c) => socketService.joinConvoy(c);
+  void leaveConvoy() => socketService.leaveConvoy();
+  void pinUser(String id) => socketService.pinUser(id);
+  void unpinUser(String id) => socketService.unpinUser(id);
+  void muteUser(String id) => socketService.muteUser(id);
+  void blockUser(String id) => socketService.blockUser(id);
+  void reportUser(String id) => socketService.reportUser(id);
+  void toggleMic() { _micMuted = !_micMuted; socketService.toggleMic(_micMuted); notifyListeners(); }
+  void setPushToTalk(bool v) { _pushToTalk = v; audioService.setPushToTalk(v); notifyListeners(); }
+  void startSpeaking() { socketService.pushToTalk(true); audioService.startSpeaking(); }
+  void stopSpeaking() { socketService.pushToTalk(false); audioService.stopSpeaking(); }
+  void clearError() { _error = null; notifyListeners(); }
+  @override void dispose() { socketService.disconnect(); locationService.dispose(); audioService.disconnect(); super.dispose(); }
 }

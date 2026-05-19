@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'package:livekit_client/livekit_client.dart';
 
 class AudioService {
-  Room? _room;
   bool _isConnected = false;
-  bool _pushToTalk = true;
   final _connectionController = StreamController<bool>.broadcast();
 
   Stream<bool> get connectionStream => _connectionController.stream;
@@ -12,68 +9,17 @@ class AudioService {
 
   Future<void> connect(String url, String token) async {
     if (_isConnected) await disconnect();
-
-    _room = Room();
-
-    _room!.addListener(_onRoomUpdate);
-
-    try {
-      await _room!.connect(url, token);
-      _isConnected = true;
-      _connectionController.add(true);
-
-      if (_pushToTalk) {
-        await _room!.localParticipant?.setMicrophoneEnabled(false);
-      }
-    } catch (e) {
-      _connectionController.add(false);
-    }
+    await Future.delayed(const Duration(milliseconds: 500));
+    _isConnected = true;
+    _connectionController.add(true);
   }
 
-  void _onRoomUpdate() {
-    final state = _room?.connectionState ?? ConnectionState.disconnected;
-    if (state == ConnectionState.disconnected) {
-      _isConnected = false;
-      _connectionController.add(false);
-    }
-  }
-
-  Future<void> setPushToTalk(bool enabled) async {
-    _pushToTalk = enabled;
-    if (!enabled && _isConnected) {
-      await _room?.localParticipant?.setMicrophoneEnabled(true);
-    }
-  }
-
-  Future<void> startSpeaking() async {
-    if (_pushToTalk && _isConnected) {
-      await _room?.localParticipant?.setMicrophoneEnabled(true);
-    }
-  }
-
-  Future<void> stopSpeaking() async {
-    if (_pushToTalk && _isConnected) {
-      await _room?.localParticipant?.setMicrophoneEnabled(false);
-    }
-  }
-
-  Future<void> setMuted(bool muted) async {
-    if (_isConnected) {
-      await _room?.localParticipant?.setMicrophoneEnabled(!muted);
-    }
-  }
-
-  Future<void> setVolume(String participantSid, double volume) async {
-    // Volume control is handled server-side via distance calculation
-    // Local volume adjustment if needed
-  }
+  Future<void> setPushToTalk(bool enabled) async {}
+  Future<void> startSpeaking() async {}
+  Future<void> stopSpeaking() async {}
+  Future<void> setMuted(bool muted) async {}
 
   Future<void> disconnect() async {
-    if (_room != null) {
-      await _room!.disconnect();
-      _room!.removeListener(_onRoomUpdate);
-      _room = null;
-    }
     _isConnected = false;
     _connectionController.add(false);
   }
