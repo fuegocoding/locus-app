@@ -279,6 +279,7 @@ New users opening the app in areas with no other Locus users will see an empty m
 - Convoy (name, access level, invite link, QR code)
 - Convoy membership
 - Pin (user, target user, timestamp)
+- StreetPass event (user, encountered user, latitude, longitude, timestamp, encounter count)
 - Block/report event
 - Audio state
 - Task (type, reward points, completion state)
@@ -308,6 +309,7 @@ New users opening the app in areas with no other Locus users will see an empty m
 - Car platform integrations (Android Auto, CarPlay).
 
 ### Phase 3 — Social and expansion
+- **StreetPass**: passive proximity journal that logs users you've been near, with stats like encounter count, common locations, and time-of-day patterns. Privacy-first — users must opt in to appear in others' StreetPass logs, and no exact location history is exposed.
 - Spotify shared listening sessions (sync music across convoy or proximity group).
 - Friend graph and trusted circles.
 - Smarter filtering by relevance and friend proximity.
