@@ -24,7 +24,8 @@ class ProximityOverlay extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -45,7 +46,7 @@ class ProximityOverlay extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               _shareButton(context, state, theme),
             ],
           ),
