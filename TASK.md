@@ -55,3 +55,26 @@
 - [ ] StreetPass encounter journal
 - [ ] Tasks/rewards system backend
 - [ ] Premium subscription flow
+
+## 🚀 Future Roadmap
+### Profile & Identity
+- [ ] User profile customization with flairs and banners (RL-style)
+- [ ] Car make/model selection with cutout image on map
+- [ ] Custom vehicle tags / license plates
+
+### Social & Friends
+- [ ] Friend system: add/remove friends, friend list
+- [ ] Quick convoy invitation from friend list
+- [ ] Nearby user actions: pin, block, add friend
+- [ ] Reciprocal pin notification (popup to pin back or remove)
+- [ ] See friends on map with distinct markers
+
+### Audio & Channels
+- [ ] Spatial audio (directional sound based on position)
+- [ ] Group chats for convoys (text + voice)
+- [ ] Community channels (persistent, larger-scale voice rooms)
+
+### Exploration & Gamification
+- [ ] % of map explored tracking
+- [ ] Exploration achievements/badges
+- [ ] Shop for cosmetics, flairs, vehicle customizations
