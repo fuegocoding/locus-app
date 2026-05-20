@@ -171,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomBar(AppState state, ThemeData theme) {
     return Positioned(
       bottom: 24,
-      left: 96,
-      right: 96,
+      left: 90,
+      right: 90,
       child: Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 12),
