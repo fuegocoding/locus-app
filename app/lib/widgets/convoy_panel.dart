@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
@@ -112,9 +113,10 @@ class ConvoyPanel extends StatelessWidget {
               width: 200,
               height: 200,
               color: Colors.white,
-              child: Center(
-                child: Text(code,
-                  style: const TextStyle(fontSize: 24, fontFamily: 'monospace')),
+              child: QrImageView(
+                data: code,
+                version: QrVersions.auto,
+                size: 200,
               ),
             ),
             const SizedBox(height: 12),
