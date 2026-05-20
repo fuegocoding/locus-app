@@ -46,13 +46,22 @@ class _HomeScreenState extends State<HomeScreen> {
             const ProximityOverlay()
           else if (state.mode == 'convoy')
             const ConvoyPanel(),
-          _buildAudioBar(state, theme),
+          _buildBottomBar(state, theme),
           Positioned(
-            bottom: 100,
-            left: 12,
+            bottom: 6,
+            left: 15,
             child: Speedometer(
               speedKmh: state.speed,
               unit: state.resolvedSpeedUnit,
+              size: 96,
+            ),
+          ),
+          Positioned(
+            bottom: 6,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _buildMicCircle(state, theme),
             ),
           ),
           if (_isHolding && state.pushToTalk && !_swipedToLock)
@@ -162,87 +171,49 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAudioBar(AppState state, ThemeData theme) {
+  Widget _buildBottomBar(AppState state, ThemeData theme) {
     return Positioned(
-      bottom: 16,
-      left: 12,
-      right: 12,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.surface.withOpacity(0.85),
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outline.withOpacity(0.15)),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _controlButton(
-                    icon: state.pushToTalk ? Icons.touch_app : Icons.mic,
-                    label: state.pushToTalk ? 'PTT' : 'Open',
-                    onTap: () => state.setPushToTalk(!state.pushToTalk),
-                  ),
-                ],
+            const Text(
+              'Live',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.greenAccent,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            _buildMicButton(state, theme),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _controlButton(
-                    icon: Icons.groups,
-                    label: 'Convoy',
-                    onTap: () => _showConvoySheet(context, state),
-                  ),
-                  _controlButton(
-                    icon: Icons.people,
-                    label: 'Nearby',
-                    onTap: () => _showNearbySheet(context, state),
-                  ),
-                ],
-              ),
-            ),
+            const Spacer(),
+            _barButton(Icons.groups, () => _showConvoySheet(context, state)),
+            const SizedBox(width: 16),
+            _barButton(Icons.people, () => _showNearbySheet(context, state)),
           ],
         ),
       ),
     );
   }
 
-  Widget _controlButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
+  Widget _barButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 22, color: Colors.white70),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54)),
-        ],
-      ),
+      child: Icon(icon, size: 18, color: Colors.white54),
     );
   }
 
-  Widget _buildMicButton(AppState state, ThemeData theme) {
+  Widget _buildMicCircle(AppState state, ThemeData theme) {
     if (state.pushToTalk) {
-      // PTT mode: hold to talk, swipe up to lock open mic
       return GestureDetector(
         onPanStart: (_) {
           setState(() {
@@ -262,33 +233,13 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         onPanEnd: (_) {
-          setState(() {
-            _isHolding = false;
-            _dragY = 0;
-          });
-          if (!_swipedToLock) {
-            state.stopSpeaking();
-          }
+          setState(() { _isHolding = false; _dragY = 0; });
+          if (!_swipedToLock) state.stopSpeaking();
         },
         onPanCancel: () {
-          setState(() {
-            _isHolding = false;
-            _dragY = 0;
-          });
-          if (!_swipedToLock) {
-            state.stopSpeaking();
-          }
+          setState(() { _isHolding = false; _dragY = 0; });
+          if (!_swipedToLock) state.stopSpeaking();
         },
-        child: _micContainer(
-          theme,
-          state.micMuted ? Icons.mic_off : Icons.mic,
-          state.micMuted ? theme.colorScheme.error : theme.colorScheme.primary,
-        ),
-      );
-    } else {
-      // Open mic mode: tap to toggle mute
-      return GestureDetector(
-        onTap: () => state.toggleMic(),
         child: _micContainer(
           theme,
           state.micMuted ? Icons.mic_off : Icons.mic,
@@ -296,31 +247,39 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+    return GestureDetector(
+      onTap: () => state.toggleMic(),
+      child: _micContainer(
+        theme,
+        state.micMuted ? Icons.mic_off : Icons.mic,
+        state.micMuted ? theme.colorScheme.error : theme.colorScheme.primary,
+      ),
+    );
   }
 
   Widget _micContainer(ThemeData theme, IconData icon, Color color) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: 80,
-      height: 80,
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: _isHolding ? color.withOpacity(0.9) : color,
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(_isHolding ? 0.6 : 0.4),
-            blurRadius: _isHolding ? 28 : 20,
-            spreadRadius: _isHolding ? 6 : 3,
+            blurRadius: _isHolding ? 32 : 24,
+            spreadRadius: _isHolding ? 8 : 4,
           ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 34),
+      child: Icon(icon, color: Colors.white, size: 40),
     );
   }
 
   Widget _buildSwipeIndicator(ThemeData theme) {
     return Positioned(
-      bottom: 100,
+      bottom: 110,
       left: 0,
       right: 0,
       child: Center(
@@ -329,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(
               Icons.keyboard_arrow_up,
-              size: 32,
+              size: 28,
               color: theme.colorScheme.primary.withOpacity(0.8),
             ),
             Text(
