@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
-// Free dark map tiles (CartoDB Dark Matter) - no API key needed
 const String _tileUrl =
     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
@@ -17,12 +16,6 @@ class MapWidget extends StatefulWidget {
 
 class _MapWidgetState extends State<MapWidget> {
   final MapController _mapController = MapController();
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
-  }
 
   void _onPositionUpdate(AppState state) {
     if (state.latitude != 0 && state.longitude != 0) {
@@ -38,7 +31,6 @@ class _MapWidgetState extends State<MapWidget> {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
 
-    // Follow user location
     WidgetsBinding.instance.addPostFrameCallback((_) => _onPositionUpdate(state));
 
     final userLocation = state.latitude != 0 && state.longitude != 0
@@ -63,7 +55,6 @@ class _MapWidgetState extends State<MapWidget> {
           userAgentPackageName: 'com.locus.locus',
           tileProvider: NetworkTileProvider(),
         ),
-        // User location marker
         MarkerLayer(
           markers: [
             Marker(
@@ -92,62 +83,150 @@ class _MapWidgetState extends State<MapWidget> {
               final isSpeaking = state.speaking[user.userId] == true;
               final isPinned = state.user?.pins.contains(user.userId) ?? false;
               final volume = state.volumes[user.userId] ?? 0.5;
+              final displayName = user.userId.substring(0, 8);
+
               return Marker(
                 point: LatLng(user.latitude, user.longitude),
                 width: 44,
                 height: 56,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSpeaking
-                            ? theme.colorScheme.primary
-                            : isPinned
-                                ? Colors.amber
-                                : theme.colorScheme.primary.withOpacity(0.5),
-                        border: Border.all(
-                          color: isPinned ? Colors.amber : theme.colorScheme.primary,
-                          width: isSpeaking ? 3 : 1.5,
+                child: GestureDetector(
+                  onTap: () => _showUserSheet(context, state, user, isPinned),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSpeaking
+                              ? theme.colorScheme.primary
+                              : isPinned
+                                  ? Colors.amber
+                                  : theme.colorScheme.primary.withOpacity(0.5),
+                          border: Border.all(
+                            color: isPinned ? Colors.amber : theme.colorScheme.primary,
+                            width: isSpeaking ? 3 : 1.5,
+                          ),
+                          boxShadow: isSpeaking
+                              ? [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary.withOpacity(0.4),
+                                    blurRadius: 12,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
                         ),
-                        boxShadow: isSpeaking
-                            ? [
-                                BoxShadow(
-                                  color: theme.colorScheme.primary.withOpacity(0.4),
-                                  blurRadius: 12,
-                                  spreadRadius: 2,
-                                ),
-                              ]
-                            : null,
+                        child: Center(
+                          child: Text(
+                            '${(volume * 100).round()}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
-                      child: Center(
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                         child: Text(
-                          '${(volume * 100).round()}',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          displayName,
+                          style: const TextStyle(fontSize: 8, color: Colors.white70),
                         ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        user.userId.substring(0, 5),
-                        style: const TextStyle(fontSize: 8, color: Colors.white70),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }),
           ],
         ),
       ],
+    );
+  }
+
+  void _showUserSheet(BuildContext context, AppState state, user, bool isPinned) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: isPinned ? Colors.amber : Theme.of(context).colorScheme.primary,
+                    child: Text(user.userId.substring(0, 1).toUpperCase()),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.userId.substring(0, 8),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '${user.latitude.toStringAsFixed(4)}, ${user.longitude.toStringAsFixed(4)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (isPinned) {
+                          state.unpinUser(user.userId);
+                        } else {
+                          state.pinUser(user.userId);
+                        }
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                      label: Text(isPinned ? 'Unpin' : 'Pin'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        state.muteUser(user.userId);
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.volume_off),
+                      label: const Text('Mute'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    state.blockUser(user.userId);
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.block, color: Colors.red),
+                  label: const Text('Block', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

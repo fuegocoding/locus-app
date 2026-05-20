@@ -43,7 +43,6 @@ class LocusApp extends StatelessWidget {
         backgroundColor: Color(0xFF161B22), selectedItemColor: Color(0xFF6C63FF), unselectedItemColor: Color(0xFF8B949E)),
     );
 
-    // iOS liquid glass when on iOS
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       return base.copyWith(
         appBarTheme: AppBarTheme(
@@ -93,6 +92,14 @@ class _AppEntryState extends State<AppEntry> {
     if (!_initialized) return const SplashScreen();
 
     return Consumer<AppState>(builder: (context, state, _) {
+      if (state.error != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error!), action: SnackBarAction(label: 'Dismiss', onPressed: state.clearError)),
+          );
+        });
+      }
+
       if (!state.isAuthenticated) return const OnboardingScreen();
       if (!state.hasProfile) return const ProfileSetupScreen();
       return const HomeScreen();

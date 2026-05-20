@@ -1,36 +1,112 @@
 import 'dart:async';
-import 'dart:math';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class LocationService {
   final _positionController = StreamController<Map<String, double>>.broadcast();
   bool _isRunning = false;
-  Timer? _timer;
+  StreamSubscription<Position>? _positionStream;
+  Timer? _backgroundTimer;
+  Position? _lastPosition;
+  bool _hasPermission = false;
 
   Stream<Map<String, double>> get positionStream => _positionController.stream;
   bool get isRunning => _isRunning;
+  bool get hasPermission => _hasPermission;
 
-  Future<bool> requestPermissions() async => true;
+  Future<bool> requestPermissions() async {
+    final locationStatus = await Permission.location.request();
+    final locationWhenInUseStatus = await Permission.locationWhenInUse.request();
+
+    _hasPermission = locationStatus.isGranted || locationWhenInUseStatus.isGranted;
+
+    if (!_hasPermission) {
+      if (locationStatus.isPermanentlyDenied || locationWhenInUseStatus.isPermanentlyDenied) {
+        await openAppSettings();
+      }
+    }
+
+    return _hasPermission;
+  }
+
+  Future<bool> requestBackgroundPermission() async {
+    final status = await Permission.locationAlways.request();
+    return status.isGranted;
+  }
 
   void startLocationUpdates() {
     if (_isRunning) return;
+    if (!_hasPermission) return;
+
     _isRunning = true;
-    const lat = 40.7128;
-    const lng = -74.0060;
-    double currentSpeed = 0;
-    _timer = Timer.periodic(const Duration(seconds: 2), (_) {
-      // Simulate realistic car acceleration/deceleration
-      final change = (Random().nextDouble() - 0.4) * 15;
-      currentSpeed = (currentSpeed + change).clamp(0, 140);
-      _positionController.add({
-        'latitude': lat + Random().nextDouble() * 0.005,
-        'longitude': lng + Random().nextDouble() * 0.005,
-        'speed': currentSpeed,
-        'heading': Random().nextDouble() * 360,
-      });
+
+    final settings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10,
+      timeLimit: const Duration(seconds: 10),
+    );
+
+    _positionStream = Geolocator.getPositionStream(locationSettings: settings).listen(
+      (Position position) {
+        _lastPosition = position;
+        _positionController.add({
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'speed': position.speed >= 0 ? position.speed * 3.6 : 0,
+          'heading': position.heading >= 0 ? position.heading : 0,
+        });
+      },
+      onError: (error) {
+        print('[Location] Error: $error');
+      },
+    );
+  }
+
+  void startBackgroundUpdates() {
+    stopLocationUpdates();
+    _isRunning = true;
+
+    _backgroundTimer?.cancel();
+    _backgroundTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 5),
+        );
+        _lastPosition = position;
+        _positionController.add({
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'speed': position.speed >= 0 ? position.speed * 3.6 : 0,
+          'heading': position.heading >= 0 ? position.heading : 0,
+        });
+      } catch (e) {
+        print('[Location] Background update error: $e');
+      }
     });
   }
 
-  void stopLocationUpdates() { _isRunning = false; _timer?.cancel(); }
-  Future<void> startBackgroundService() async {}
-  void dispose() { stopLocationUpdates(); _positionController.close(); }
+  Position? getLastPosition() => _lastPosition;
+
+  void stopLocationUpdates() {
+    _isRunning = false;
+    _positionStream?.cancel();
+    _positionStream = null;
+    _backgroundTimer?.cancel();
+    _backgroundTimer = null;
+  }
+
+  Future<void> startBackgroundService() async {
+    final hasBg = await requestBackgroundPermission();
+    if (hasBg) {
+      startBackgroundUpdates();
+    } else {
+      startLocationUpdates();
+    }
+  }
+
+  void dispose() {
+    stopLocationUpdates();
+    _positionController.close();
+  }
 }

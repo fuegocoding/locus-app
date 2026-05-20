@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
 
 class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
@@ -21,7 +23,9 @@ class TasksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
     final theme = Theme.of(context);
+    final points = state.user?.points ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tasks')),
@@ -42,7 +46,7 @@ class TasksScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('0 Points', style: theme.textTheme.titleMedium),
+                      Text('$points Points', style: theme.textTheme.titleMedium),
                       Text('Complete tasks to earn points',
                         style: theme.textTheme.bodySmall),
                     ],

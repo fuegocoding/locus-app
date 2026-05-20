@@ -28,8 +28,8 @@ class SettingsScreen extends StatelessWidget {
           _sectionHeader('Privacy', theme),
           ListTile(
             leading: const Icon(Icons.visibility),
-            title: const Text('Visibility'),
-            subtitle: Text(state.user?.privacyMode ?? 'open'),
+            title: const Text('Discoverability'),
+            subtitle: Text(_privacyLabel(state.user?.privacyMode ?? 'open')),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showPrivacySheet(context, state),
           ),
@@ -61,6 +61,12 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
+          _sectionHeader('Account', theme),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () => _confirmLogout(context, state),
+          ),
           _sectionHeader('About', theme),
           const ListTile(
             title: Text('Version'),
@@ -81,6 +87,16 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _privacyLabel(String mode) {
+    switch (mode) {
+      case 'open': return 'Open - Anyone nearby';
+      case 'friends-only': return 'Friends only';
+      case 'convoy-only': return 'Convoy only';
+      case 'invisible': return 'Invisible';
+      default: return mode;
+    }
   }
 
   String _unitLabel(String unit) {
@@ -142,28 +158,63 @@ class SettingsScreen extends StatelessWidget {
               leading: const Icon(Icons.public),
               title: const Text('Open'),
               subtitle: const Text('Anyone nearby can see and hear you'),
-              onTap: () => Navigator.pop(context),
+              trailing: state.user?.privacyMode == 'open' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { _setPrivacy(context, state, 'open'); },
             ),
             ListTile(
               leading: const Icon(Icons.people),
               title: const Text('Friends Only'),
               subtitle: const Text('Only friends can see you'),
-              onTap: () => Navigator.pop(context),
+              trailing: state.user?.privacyMode == 'friends-only' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { _setPrivacy(context, state, 'friends-only'); },
             ),
             ListTile(
               leading: const Icon(Icons.groups),
               title: const Text('Convoy Only'),
               subtitle: const Text('Visible only in your active convoy'),
-              onTap: () => Navigator.pop(context),
+              trailing: state.user?.privacyMode == 'convoy-only' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { _setPrivacy(context, state, 'convoy-only'); },
             ),
             ListTile(
               leading: const Icon(Icons.visibility_off),
               title: const Text('Invisible'),
               subtitle: const Text('Completely hidden from others'),
-              onTap: () => Navigator.pop(context),
+              trailing: state.user?.privacyMode == 'invisible' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { _setPrivacy(context, state, 'invisible'); },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _setPrivacy(BuildContext context, AppState state, String mode) {
+    state.apiService.updateProfile({'privacyMode': mode});
+    state.user?.privacyMode = mode;
+    Navigator.pop(context);
+  }
+
+  void _confirmLogout(BuildContext context, AppState state) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              state.apiService.clearToken();
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Logout'),
+          ),
+        ],
       ),
     );
   }

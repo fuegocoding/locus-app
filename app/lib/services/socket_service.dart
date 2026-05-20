@@ -8,12 +8,14 @@ class SocketService {
   final _volumeController = StreamController<Map<String, double>>.broadcast();
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
   final _convoyController = StreamController<Map<String, dynamic>>.broadcast();
+  final _audioTokenController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
   Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
   Stream<Map<String, dynamic>> get convoyStream => _convoyController.stream;
+  Stream<Map<String, dynamic>> get audioTokenStream => _audioTokenController.stream;
   Stream<String> get errorStream => _errorController.stream;
 
   bool get connected => _socket?.connected ?? false;
@@ -22,14 +24,24 @@ class SocketService {
     _socket = io.io(
       serverUrl,
       io.OptionBuilder()
-          .setTransports(['websocket'])
+          .setTransports(['websocket', 'polling'])
           .setAuth({'token': token})
           .enableAutoConnect()
+          .disableReconnection()
           .build(),
     );
 
-    _socket!.on('connect', (_) {});
-    _socket!.on('disconnect', (_) {});
+    _socket!.on('connect', (_) {
+      print('[Socket] Connected');
+    });
+
+    _socket!.on('disconnect', (_) {
+      print('[Socket] Disconnected');
+    });
+
+    _socket!.on('reconnect', (_) {
+      print('[Socket] Reconnected');
+    });
 
     _socket!.on('presence:neighbors', (data) {
       final list = (data as List).map((p) => PresenceUpdate.fromJson(p)).toList();
@@ -50,6 +62,10 @@ class SocketService {
 
     _socket!.on('audio:speaking', (data) {
       _speakingController.add({data['userId']: data['speaking']});
+    });
+
+    _socket!.on('audio:token', (data) {
+      _audioTokenController.add(data);
     });
 
     _socket!.on('convoy:created', (data) {

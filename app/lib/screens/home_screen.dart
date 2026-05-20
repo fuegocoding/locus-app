@@ -42,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
             right: 8,
             child: _buildTopBar(state, theme),
           ),
+          if (!state.isOnline) _buildOfflineBanner(theme),
+          if (!state.isAudioConnected && state.isAuthenticated) _buildAudioDisconnectedBanner(theme),
           if (state.mode == 'proximity')
             const ProximityOverlay()
           else if (state.mode == 'convoy')
@@ -64,6 +66,56 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_isHolding && state.pushToTalk && !_swipedToLock)
             _buildSwipeIndicator(theme),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineBanner(ThemeData theme) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 50,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.wifi_off, size: 16, color: Colors.white),
+            const SizedBox(width: 8),
+            const Text(
+              'You are offline',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioDisconnectedBanner(ThemeData theme) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + (state.isOnline ? 50 : 80),
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.volume_off, size: 16, color: Colors.white),
+            const SizedBox(width: 8),
+            const Text(
+              'Audio disconnected',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }
