@@ -3,6 +3,8 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth';
@@ -33,6 +35,15 @@ app.get('/health', (_req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Serve Flutter web build (must be AFTER API routes)
+const webDir = path.resolve(__dirname, '../../app/build/web');
+if (fs.existsSync(webDir)) {
+  app.use(express.static(webDir));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(webDir, 'index.html'));
+  });
+}
 
 // Socket.io auth middleware
 io.use((socket, next) => {
