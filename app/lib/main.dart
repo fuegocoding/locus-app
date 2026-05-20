@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
+import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_setup_screen.dart';
 import 'screens/home_screen.dart';
@@ -21,13 +22,7 @@ class LocusApp extends StatelessWidget {
     return MaterialApp(
       title: 'Locus',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF), brightness: Brightness.dark),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0D1117),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF161B22), selectedItemColor: Color(0xFF6C63FF), unselectedItemColor: Color(0xFF8B949E)),
-      ),
+      theme: _buildTheme(context, Brightness.dark),
       builder: (context, child) {
         if (!isMobile && kIsWeb) {
           return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 430),
@@ -35,11 +30,72 @@ class LocusApp extends StatelessWidget {
         }
         return child!;
       },
-      home: Consumer<AppState>(builder: (context, state, _) {
-        if (!state.isAuthenticated) return const OnboardingScreen();
-        if (!state.hasProfile) return const ProfileSetupScreen();
-        return const HomeScreen();
-      }),
+      home: const AppEntry(),
     );
+  }
+
+  ThemeData _buildTheme(BuildContext context, Brightness brightness) {
+    final base = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF), brightness: brightness),
+      useMaterial3: true,
+      scaffoldBackgroundColor: const Color(0xFF0D1117),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF161B22), selectedItemColor: Color(0xFF6C63FF), unselectedItemColor: Color(0xFF8B949E)),
+    );
+
+    // iOS liquid glass when on iOS
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      return base.copyWith(
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF1A1D23).withOpacity(0.7),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
+        cardTheme: const CardThemeData(
+          color: Color(0xFF21262D),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        ),
+        bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: const Color(0xFF161B22).withOpacity(0.9),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        ),
+      );
+    }
+
+    return base;
+  }
+}
+
+class AppEntry extends StatefulWidget {
+  const AppEntry({super.key});
+
+  @override
+  State<AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<AppEntry> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await context.read<AppState>().init();
+    setState(() => _initialized = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) return const SplashScreen();
+
+    return Consumer<AppState>(builder: (context, state, _) {
+      if (!state.isAuthenticated) return const OnboardingScreen();
+      if (!state.hasProfile) return const ProfileSetupScreen();
+      return const HomeScreen();
+    });
   }
 }

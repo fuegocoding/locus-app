@@ -180,17 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _controlButton(
               icon: state.pushToTalk ? Icons.touch_app : Icons.mic,
               label: state.pushToTalk ? 'PTT' : 'Open',
-              onTap: () => _showModeSheet(context, state),
-            ),
-            _controlButton(
-              icon: state.micMuted ? Icons.mic_off : Icons.mic,
-              label: state.micMuted ? 'Muted' : 'Live',
-              onTap: () {
-                if (!state.pushToTalk) {
-                  // Open mic: toggle mute
-                  state.toggleMic();
-                }
-              },
+              onTap: () => state.setPushToTalk(!state.pushToTalk),
             ),
             _buildMicButton(state, theme),
             _controlButton(
@@ -199,9 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => _showConvoySheet(context, state),
             ),
             _controlButton(
-              icon: Icons.more_horiz,
-              label: 'More',
-              onTap: () {},
+              icon: Icons.people,
+              label: 'Nearby',
+              onTap: () => _showNearbySheet(context, state),
             ),
           ],
         ),
@@ -333,30 +323,47 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showModeSheet(BuildContext context, AppState state) {
+  void _showNearbySheet(BuildContext context, AppState state) {
     showModalBottomSheet(
       context: context,
       builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Mic Mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            ),
-            SwitchListTile(
-              secondary: Icon(state.pushToTalk ? Icons.touch_app : Icons.mic),
-              title: Text(state.pushToTalk ? 'Push to Talk' : 'Open Mic'),
-              subtitle: Text(state.pushToTalk
-                  ? 'Hold mic button to speak, slide up to lock'
-                  : 'Mic stays on, tap button to mute'),
-              value: state.pushToTalk,
-              onChanged: (v) {
-                state.setPushToTalk(v);
-                Navigator.pop(context);
-              },
-            ),
-          ],
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Nearby Users', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (state.nearbyUsers.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: Text('No one nearby')),
+                )
+              else
+                ...state.nearbyUsers.map((user) => ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Text(user.userId.substring(0, 1).toUpperCase()),
+                  ),
+                  title: Text('User ${user.userId.substring(0, 6)}'),
+                  subtitle: Text('${user.latitude.toStringAsFixed(4)}, ${user.longitude.toStringAsFixed(4)}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.volume_off, size: 20),
+                        onPressed: () { state.muteUser(user.userId); Navigator.pop(context); },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.block, size: 20, color: Colors.red),
+                        onPressed: () { state.blockUser(user.userId); Navigator.pop(context); },
+                      ),
+                    ],
+                  ),
+                )),
+            ],
+          ),
         ),
       ),
     );

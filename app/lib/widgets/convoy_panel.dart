@@ -15,6 +15,8 @@ class ConvoyPanel extends StatelessWidget {
 
     if (convoy == null) return const SizedBox.shrink();
 
+    final inviteUrl = 'https://locus.app/convoy/${convoy.inviteCode}';
+
     return Positioned(
       top: MediaQuery.of(context).padding.top + 60,
       left: 16,
@@ -24,9 +26,7 @@ class ConvoyPanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.blue.withOpacity(0.3),
-          ),
+          border: Border.all(color: Colors.blue.withOpacity(0.3)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -39,17 +39,12 @@ class ConvoyPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(convoy.name,
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      Text('${convoy.members.length} members',
-                        style: theme.textTheme.bodySmall),
+                      Text(convoy.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('${convoy.members.length} members', style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),
-                TextButton(
-                  onPressed: () => state.leaveConvoy(),
-                  child: const Text('Leave'),
-                ),
+                TextButton(onPressed: () => state.leaveConvoy(), child: const Text('Leave')),
               ],
             ),
             const SizedBox(height: 12),
@@ -58,24 +53,16 @@ class ConvoyPanel extends StatelessWidget {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(8)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Text(convoy.inviteCode,
-                            style: const TextStyle(fontFamily: 'monospace', fontSize: 18)),
-                        ),
+                        Expanded(child: Text(convoy.inviteCode, style: const TextStyle(fontFamily: 'monospace', fontSize: 18))),
                         IconButton(
                           icon: const Icon(Icons.copy, size: 18),
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: convoy.inviteCode));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Invite code copied')),
-                            );
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Code copied')));
                           },
                         ),
                       ],
@@ -83,14 +70,12 @@ class ConvoyPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.qr_code),
-                  onPressed: () => _showQR(context, convoy.inviteCode),
-                ),
+                IconButton(icon: const Icon(Icons.qr_code), onPressed: () => _showQR(context, convoy.inviteCode, inviteUrl)),
                 IconButton(
                   icon: const Icon(Icons.share),
                   onPressed: () {
-                    // TODO: Share sheet
+                    Clipboard.setData(ClipboardData(text: inviteUrl));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invite link copied')));
                   },
                 ),
               ],
@@ -101,7 +86,7 @@ class ConvoyPanel extends StatelessWidget {
     );
   }
 
-  void _showQR(BuildContext context, String code) {
+  void _showQR(BuildContext context, String code, String url) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -110,24 +95,26 @@ class ConvoyPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 200,
-              height: 200,
+              width: 220,
+              height: 220,
               color: Colors.white,
-              child: QrImageView(
-                data: code,
-                version: QrVersions.auto,
-                size: 200,
-              ),
+              child: QrImageView(data: url, version: QrVersions.auto, size: 220),
             ),
             const SizedBox(height: 12),
-            Text('Code: $code',
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 18)),
+            Text('Code: $code', style: const TextStyle(fontFamily: 'monospace', fontSize: 16)),
+            const SizedBox(height: 4),
+            Text(url, style: TextStyle(fontSize: 10, color: Colors.grey[600]), textAlign: TextAlign.center),
           ],
         ),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: url));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invite link copied')));
+            },
+            child: const Text('Copy Link'),
           ),
         ],
       ),

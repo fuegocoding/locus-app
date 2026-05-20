@@ -1,63 +1,181 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
-class MapWidget extends StatelessWidget {
+// Replace with your Mapbox public token
+const String _mapboxToken = 'pk.eyJ1IjoibG9jdXNhcHAiLCJhIjoiY2x1Z2Z0eXk0MDAxaTJxcXF1Z3Z1eXl4bCJ9.abc123';
+const String _mapboxUrl =
+    'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}@2x?access_token=$_mapboxToken';
+
+class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
+
+  @override
+  State<MapWidget> createState() => _MapWidgetState();
+}
+
+class _MapWidgetState extends State<MapWidget> {
+  final MapController _mapController = MapController();
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _onPositionUpdate(AppState state) {
+    if (state.latitude != 0 && state.longitude != 0) {
+      _mapController.move(
+        LatLng(state.latitude, state.longitude),
+        _mapController.camera.zoom,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
-    return Container(
-      color: const Color(0xFF1A1D23),
-      child: Stack(children: [
-        CustomPaint(painter: _MapGridPainter(), size: Size.infinite),
-        if (state.nearbyUsers.isNotEmpty) ...state.nearbyUsers.take(10).map((u) {
-          final angle = u.userId.hashCode % 360 * pi / 180;
-          final dist = 60.0 + (u.userId.hashCode % 10) * 12.0;
-          final isSpeaking = state.speaking[u.userId] == true;
-          final isPinned = state.user?.pins.contains(u.userId) ?? false;
-          return Positioned(top: 120 + sin(angle) * dist, left: MediaQuery.of(context).size.width / 2 - 24 + cos(angle) * dist,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 40, height: 40,
-                decoration: BoxDecoration(shape: BoxShape.circle,
-                  color: isSpeaking ? theme.colorScheme.primary : isPinned ? Colors.amber : theme.colorScheme.primary.withOpacity(0.5),
-                  border: Border.all(color: isPinned ? Colors.amber : theme.colorScheme.primary, width: isSpeaking ? 3 : 1.5),
-                  boxShadow: isSpeaking ? [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.4), blurRadius: 12, spreadRadius: 2)] : null),
-                child: Center(child: Text('${((state.volumes[u.userId] ?? 0.5) * 100).round()}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)))),
-              const SizedBox(height: 2),
-              Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(4)),
-                child: Text(u.userId.substring(0, 5), style: const TextStyle(fontSize: 8, color: Colors.white70))),
-            ]));
-        }),
-        Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.my_location, size: 48, color: theme.colorScheme.primary),
-          const SizedBox(height: 4),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
-            child: Text(state.latitude != 0 ? '${state.latitude.toStringAsFixed(6)}, ${state.longitude.toStringAsFixed(6)}' : 'Simulating GPS...',
-              style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.white70))),
-        ])),
-      ]),
+
+    // Follow user location
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onPositionUpdate(state));
+
+    final userLocation = state.latitude != 0 && state.longitude != 0
+        ? LatLng(state.latitude, state.longitude)
+        : const LatLng(40.7128, -74.0060);
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: userLocation,
+        initialZoom: 15,
+        minZoom: 3,
+        maxZoom: 19,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: _mapboxUrl,
+          additionalOptions: const {'accessToken': _mapboxToken},
+          userAgentPackageName: 'com.locus.locus',
+          tileProvider: NetworkTileProvider(),
+        ),
+        // User location marker
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: userLocation,
+              width: 40,
+              height: 40,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  border: Border.all(color: theme.colorScheme.primary, width: 2),
+                ),
+                child: Center(
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            ...state.nearbyUsers.map((user) {
+              final isSpeaking = state.speaking[user.userId] == true;
+              final isPinned = state.user?.pins.contains(user.userId) ?? false;
+              final volume = state.volumes[user.userId] ?? 0.5;
+              return Marker(
+                point: LatLng(user.latitude, user.longitude),
+                width: 44,
+                height: 56,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSpeaking
+                            ? theme.colorScheme.primary
+                            : isPinned
+                                ? Colors.amber
+                                : theme.colorScheme.primary.withOpacity(0.5),
+                        border: Border.all(
+                          color: isPinned ? Colors.amber : theme.colorScheme.primary,
+                          width: isSpeaking ? 3 : 1.5,
+                        ),
+                        boxShadow: isSpeaking
+                            ? [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${(volume * 100).round()}',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        user.userId.substring(0, 5),
+                        style: const TextStyle(fontSize: 8, color: Colors.white70),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+        // Speed/heading indicator overlay
+        if (state.speed > 0)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: userLocation,
+                width: 120,
+                height: 30,
+                alignment: Alignment.topCenter,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${state.speed.toStringAsFixed(0)} mph',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = const Color(0xFF21262D)..strokeWidth = 0.5;
-    for (double x = 0; x < size.width; x += 40) canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);
-    for (double y = 0; y < size.height; y += 40) canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
-    final mp = Paint()..color = const Color(0xFF30363D)..strokeWidth = 1.0;
-    final cx = size.width / 2; final cy = size.height / 2;
-    canvas.drawCircle(Offset(cx, cy), size.width * 0.45, mp);
-    canvas.drawCircle(Offset(cx, cy), size.width * 0.25, mp);
-    canvas.drawCircle(Offset(cx, cy), size.width * 0.08, mp);
-    canvas.drawLine(Offset(cx - 12, cy), Offset(cx + 12, cy), mp..strokeWidth = 2);
-    canvas.drawLine(Offset(cx, cy - 12), Offset(cx, cy + 12), mp);
-  }
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
