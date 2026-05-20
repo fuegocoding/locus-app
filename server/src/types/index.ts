@@ -119,6 +119,8 @@ export interface ClientToServerEvents {
   'user:report': (data: { targetUserId: string; reason?: string }) => void;
   'audio:push-to-talk': (data: { speaking: boolean }) => void;
   'audio:toggle-mic': (data: { muted: boolean }) => void;
+  'video:start': () => void;
+  'video:stop': () => void;
 }
 
 export interface ServerToClientEvents {
@@ -134,4 +136,6 @@ export interface ServerToClientEvents {
   'audio:speaking': (data: { userId: string; speaking: boolean }) => void;
   'audio:volume-update': (data: { userId: string; volume: number }) => void;
   'error': (data: { message: string; code: string }) => void;
+  'video:participant-started': (data: { userId: string }) => void;
+  'video:participant-stopped': (data: { userId: string }) => void;
 }

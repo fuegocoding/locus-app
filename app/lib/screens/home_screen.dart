@@ -5,6 +5,7 @@ import '../widgets/map_widget.dart';
 import '../widgets/proximity_overlay.dart';
 import '../widgets/convoy_panel.dart';
 import '../widgets/speedometer.dart';
+import '../widgets/video_grid.dart';
 import 'tasks_screen.dart';
 import 'settings_screen.dart';
 
@@ -44,8 +45,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (state.mode == 'proximity')
             const ProximityOverlay()
-          else if (state.mode == 'convoy')
+          else if (state.mode == 'convoy') ...[
             const ConvoyPanel(),
+            const VideoGrid(),
+          ],
           _buildBottomBar(state, theme),
           Positioned(
             bottom: 8,

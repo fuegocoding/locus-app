@@ -18,6 +18,8 @@ class AudioService {
   Future<void> startSpeaking() async {}
   Future<void> stopSpeaking() async {}
   Future<void> setMuted(bool muted) async {}
+  Future<void> startVideo() async {}
+  Future<void> stopVideo() async {}
 
   Future<void> disconnect() async {
     _isConnected = false;

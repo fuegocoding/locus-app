@@ -9,12 +9,14 @@ class SocketService {
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
   final _convoyController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
+  final _videoController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
   Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
   Stream<Map<String, dynamic>> get convoyStream => _convoyController.stream;
   Stream<String> get errorStream => _errorController.stream;
+  Stream<Map<String, dynamic>> get videoStream => _videoController.stream;
 
   bool get connected => _socket?.connected ?? false;
 
@@ -75,6 +77,14 @@ class SocketService {
     _socket!.on('error', (data) {
       _errorController.add(data['message'] ?? 'Unknown error');
     });
+
+    _socket!.on('video:participant-started', (data) {
+      _videoController.add({'type': 'started', 'userId': data['userId']});
+    });
+
+    _socket!.on('video:participant-stopped', (data) {
+      _videoController.add({'type': 'stopped', 'userId': data['userId']});
+    });
   }
 
   void updatePresence({
@@ -133,6 +143,14 @@ class SocketService {
 
   void toggleMic(bool muted) {
     _socket?.emit('audio:toggle-mic', {'muted': muted});
+  }
+
+  void startVideo() {
+    _socket?.emit('video:start', {});
+  }
+
+  void stopVideo() {
+    _socket?.emit('video:stop', {});
   }
 
   void disconnect() {

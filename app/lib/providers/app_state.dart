@@ -22,6 +22,8 @@ class AppState extends ChangeNotifier {
   Convoy? _currentConvoy;
   bool _micMuted = false;
   bool _pushToTalk = false;
+  bool _videoEnabled = false;
+  Map<String, bool> _remoteVideoEnabled = {};
   String _speedUnit = 'default'; // 'default' | 'kmh' | 'mph'
   String? _error;
   bool _isLoading = false;
@@ -41,6 +43,8 @@ class AppState extends ChangeNotifier {
   Convoy? get currentConvoy => _currentConvoy;
   bool get micMuted => _micMuted;
   bool get pushToTalk => _pushToTalk;
+  bool get videoEnabled => _videoEnabled;
+  Map<String, bool> get remoteVideoEnabled => _remoteVideoEnabled;
   String get resolvedSpeedUnit {
     if (_speedUnit != 'default') return _speedUnit;
     // Detect based on locale: US, UK, Liberia, Myanmar use mph
@@ -95,6 +99,10 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
     socketService.errorStream.listen((e) { _error = e; notifyListeners(); });
+    socketService.videoStream.listen((d) {
+      if (d['type'] == 'started') { _remoteVideoEnabled[d['userId']] = true; notifyListeners(); }
+      else if (d['type'] == 'stopped') { _remoteVideoEnabled[d['userId']] = false; notifyListeners(); }
+    });
   }
   Future<bool> requestPermissions() async => locationService.requestPermissions();
   void startLocation() {
@@ -121,6 +129,12 @@ class AppState extends ChangeNotifier {
   void setSpeedUnit(String unit) { _speedUnit = unit; notifyListeners(); }
   void startSpeaking() { socketService.pushToTalk(true); audioService.startSpeaking(); }
   void stopSpeaking() { socketService.pushToTalk(false); audioService.stopSpeaking(); }
+  void toggleVideo() {
+    _videoEnabled = !_videoEnabled;
+    if (_videoEnabled) { socketService.startVideo(); audioService.startVideo(); }
+    else { socketService.stopVideo(); audioService.stopVideo(); }
+    notifyListeners();
+  }
   void clearError() { _error = null; notifyListeners(); }
   @override void dispose() { socketService.disconnect(); locationService.dispose(); audioService.disconnect(); super.dispose(); }
 }
