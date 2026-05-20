@@ -53,12 +53,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildMicCircle(state, theme),
           ),
           Positioned(
-            bottom: 8,
+            bottom: 24,
             right: 16,
             child: Speedometer(
               speedKmh: state.speed,
               unit: state.resolvedSpeedUnit,
-              size: 110,
+              size: 80,
             ),
           ),
           if (_isHolding && state.pushToTalk && !_swipedToLock)
@@ -223,11 +223,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildMicCircle(AppState state, ThemeData theme) {
     final isPtt = state.pushToTalk;
-    final isActive = isPtt ? _isHolding : !state.micMuted;
-    final icon = state.micMuted && !isPtt ? Icons.mic_off : Icons.mic;
-    final color = isActive
-        ? const Color(0xFFC4B5FD)
-        : Colors.grey.shade700;
+    final isMuted = state.micMuted;
+    final isActive = isPtt ? _isHolding : !isMuted;
+    final icon = isMuted && !isPtt ? Icons.mic_off : Icons.mic;
+    final color = isMuted && !isPtt
+        ? theme.colorScheme.error
+        : isActive
+            ? const Color(0xFFC4B5FD)
+            : Colors.grey.shade700;
 
     if (isPtt) {
       return GestureDetector(
@@ -245,6 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_dragY < -_swipeThreshold && !_swipedToLock) {
               _swipedToLock = true;
               state.setPushToTalk(false);
+              if (state.micMuted) state.toggleMic();
             }
           });
         },
