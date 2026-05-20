@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildAudioBar(state, theme),
           Positioned(
             bottom: 100,
-            right: 12,
+            left: 12,
             child: Speedometer(
               speedKmh: state.speed,
               unit: state.resolvedSpeedUnit,
@@ -168,10 +168,10 @@ class _HomeScreenState extends State<HomeScreen> {
       left: 12,
       right: 12,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: theme.colorScheme.outline.withOpacity(0.2),
           ),
@@ -301,20 +301,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _micContainer(ThemeData theme, IconData icon, Color color) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: 64,
-      height: 64,
+      width: 80,
+      height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: _isHolding ? color.withOpacity(0.9) : color,
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(_isHolding ? 0.6 : 0.4),
-            blurRadius: _isHolding ? 24 : 16,
-            spreadRadius: _isHolding ? 4 : 2,
+            blurRadius: _isHolding ? 28 : 20,
+            spreadRadius: _isHolding ? 6 : 3,
           ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 28),
+      child: Icon(icon, color: Colors.white, size: 34),
     );
   }
 

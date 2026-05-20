@@ -24,8 +24,8 @@ class Speedometer extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      width: 90,
-      height: 70,
+      width: 110,
+      height: 90,
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.6),
         borderRadius: BorderRadius.circular(16),
