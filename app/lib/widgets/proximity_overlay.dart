@@ -23,23 +23,29 @@ class ProximityOverlay extends StatelessWidget {
             color: theme.colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'No one nearby',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No one nearby',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Invite friends to get started',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Invite friends to get started',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(width: 12),
               _shareButton(context, state, theme),
             ],
           ),
@@ -67,7 +73,8 @@ class ProximityOverlay extends StatelessWidget {
   }
 
   void _showShareSheet(BuildContext context, AppState state) {
-    final inviteLink = 'https://locus.app/join/${state.user?.id ?? 'demo'}';
+    final username = state.user?.displayName ?? 'demo';
+    final inviteLink = 'https://locus.app/join/$username';
 
     showModalBottomSheet(
       context: context,
