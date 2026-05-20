@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildMicCircle(state, theme),
           ),
           Positioned(
-            bottom: 24,
+            bottom: 8,
             right: 16,
             child: Speedometer(
               speedKmh: state.speed,
@@ -171,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomBar(AppState state, ThemeData theme) {
     return Positioned(
       bottom: 24,
-      left: 100,
-      right: 100,
+      left: 80,
+      right: 80,
       child: Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 12),
