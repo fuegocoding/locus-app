@@ -3,27 +3,49 @@ import Redis from 'ioredis';
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 let redis: Redis | null = null;
+let redisConnected = false;
+let errorLogged = false;
 
 export function getRedis(): Redis {
   if (!redis) {
     redis = new Redis(REDIS_URL, {
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
-        const delay = Math.min(times * 50, 2000);
+        if (times > 10) {
+          if (!errorLogged) {
+            console.error('[Redis] Max retries reached. Set REDIS_URL env var to connect.');
+            errorLogged = true;
+          }
+          return null;
+        }
+        const delay = Math.min(times * 100, 3000);
         return delay;
       },
-      lazyConnect: false,
+      lazyConnect: true,
     });
 
     redis.on('error', (err) => {
-      console.error('[Redis] Connection error:', err.message);
+      if (!errorLogged) {
+        console.error('[Redis] Connection error:', err.message);
+        errorLogged = true;
+      }
     });
 
     redis.on('connect', () => {
       console.log('[Redis] Connected');
+      redisConnected = true;
+      errorLogged = false;
+    });
+
+    redis.on('reconnecting', () => {
+      redisConnected = false;
     });
   }
   return redis;
+}
+
+export function isRedisConnected(): boolean {
+  return redisConnected;
 }
 
 const PRESENCE_KEY = 'locus:presence';

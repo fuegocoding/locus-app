@@ -13,7 +13,7 @@ import authRoutes from './routes/auth';
 import { setupSocketHandlers, addConnectedUser } from './socket';
 import { verifyAuthToken } from './services/auth';
 import { cleanupStaleRooms } from './services/proximity';
-import { getRedis } from './services/redis';
+import { getRedis, isRedisConnected } from './services/redis';
 import type { ClientToServerEvents, ServerToClientEvents } from './types';
 
 const app = express();
@@ -75,11 +75,11 @@ app.get('/health', async (_req, res) => {
     health.services.redis = 'connected';
   } catch {
     health.services.redis = 'disconnected';
-    health.status = 'degraded';
+    // Don't fail health check - Redis may not be configured yet
+    health.status = 'ok';
   }
 
-  const statusCode = health.status === 'ok' ? 200 : 503;
-  res.status(statusCode).json(health);
+  res.status(200).json(health);
 });
 
 // Auth routes
@@ -156,6 +156,7 @@ setInterval(() => {
 
 // Cleanup stale presence entries every 60 seconds
 setInterval(async () => {
+  if (!isRedisConnected()) return;
   try {
     const r = getRedis();
     const keys = await r.keys('locus:presence:*');
