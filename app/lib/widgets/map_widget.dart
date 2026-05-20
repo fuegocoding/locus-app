@@ -4,10 +4,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
-// Replace with your Mapbox public token
-const String _mapboxToken = 'pk.eyJ1IjoibG9jdXNhcHAiLCJhIjoiY2x1Z2Z0eXk0MDAxaTJxcXF1Z3Z1eXl4bCJ9.abc123';
-const String _mapboxUrl =
-    'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}@2x?access_token=$_mapboxToken';
+// Free dark map tiles (CartoDB Dark Matter) - no API key needed
+const String _tileUrl =
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
@@ -59,8 +58,8 @@ class _MapWidgetState extends State<MapWidget> {
       ),
       children: [
         TileLayer(
-          urlTemplate: _mapboxUrl,
-          additionalOptions: const {'accessToken': _mapboxToken},
+          urlTemplate: _tileUrl,
+          subdomains: const ['a', 'b', 'c', 'd'],
           userAgentPackageName: 'com.locus.locus',
           tileProvider: NetworkTileProvider(),
         ),
