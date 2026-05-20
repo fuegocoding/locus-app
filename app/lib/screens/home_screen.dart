@@ -175,23 +175,37 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _controlButton(
-              icon: state.pushToTalk ? Icons.touch_app : Icons.mic,
-              label: state.pushToTalk ? 'PTT' : 'Open',
-              onTap: () => state.setPushToTalk(!state.pushToTalk),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _controlButton(
+                    icon: state.pushToTalk ? Icons.touch_app : Icons.mic,
+                    label: state.pushToTalk ? 'PTT' : 'Open',
+                    onTap: () => state.setPushToTalk(!state.pushToTalk),
+                  ),
+                ],
+              ),
             ),
             _buildMicButton(state, theme),
-            _controlButton(
-              icon: Icons.groups,
-              label: 'Convoy',
-              onTap: () => _showConvoySheet(context, state),
-            ),
-            _controlButton(
-              icon: Icons.people,
-              label: 'Nearby',
-              onTap: () => _showNearbySheet(context, state),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _controlButton(
+                    icon: Icons.groups,
+                    label: 'Convoy',
+                    onTap: () => _showConvoySheet(context, state),
+                  ),
+                  _controlButton(
+                    icon: Icons.people,
+                    label: 'Nearby',
+                    onTap: () => _showNearbySheet(context, state),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
