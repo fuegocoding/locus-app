@@ -4,6 +4,7 @@ import '../providers/app_state.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/proximity_overlay.dart';
 import '../widgets/convoy_panel.dart';
+import '../widgets/speedometer.dart';
 import 'tasks_screen.dart';
 import 'settings_screen.dart';
 
@@ -46,6 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
           else if (state.mode == 'convoy')
             const ConvoyPanel(),
           _buildAudioBar(state, theme),
+          Positioned(
+            bottom: 100,
+            right: 12,
+            child: Speedometer(
+              speedKmh: state.speed,
+              unit: state.resolvedSpeedUnit,
+            ),
+          ),
           if (_isHolding && state.pushToTalk && !_swipedToLock)
             _buildSwipeIndicator(theme),
         ],

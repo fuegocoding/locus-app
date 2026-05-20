@@ -16,11 +16,15 @@ class LocationService {
     _isRunning = true;
     const lat = 40.7128;
     const lng = -74.0060;
+    double currentSpeed = 0;
     _timer = Timer.periodic(const Duration(seconds: 2), (_) {
+      // Simulate realistic car acceleration/deceleration
+      final change = (Random().nextDouble() - 0.4) * 15;
+      currentSpeed = (currentSpeed + change).clamp(0, 140);
       _positionController.add({
-        'latitude': lat + Random().nextDouble() * 0.01,
-        'longitude': lng + Random().nextDouble() * 0.01,
-        'speed': Random().nextDouble() * 50,
+        'latitude': lat + Random().nextDouble() * 0.005,
+        'longitude': lng + Random().nextDouble() * 0.005,
+        'speed': currentSpeed,
         'heading': Random().nextDouble() * 360,
       });
     });

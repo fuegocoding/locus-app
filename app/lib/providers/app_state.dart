@@ -22,6 +22,7 @@ class AppState extends ChangeNotifier {
   Convoy? _currentConvoy;
   bool _micMuted = false;
   bool _pushToTalk = false;
+  String _speedUnit = 'default'; // 'default' | 'kmh' | 'mph'
   String? _error;
   bool _isLoading = false;
 
@@ -40,6 +41,16 @@ class AppState extends ChangeNotifier {
   Convoy? get currentConvoy => _currentConvoy;
   bool get micMuted => _micMuted;
   bool get pushToTalk => _pushToTalk;
+  String get resolvedSpeedUnit {
+    if (_speedUnit != 'default') return _speedUnit;
+    // Detect based on locale: US, UK, Liberia, Myanmar use mph
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final country = locale.countryCode?.toUpperCase() ?? '';
+    const mphCountries = {'US', 'GB', 'LR', 'MM'};
+    return mphCountries.contains(country) ? 'mph' : 'kmh';
+  }
+
+  String get speedUnitSetting => _speedUnit;
   String? get error => _error;
   bool get isLoading => _isLoading;
 
@@ -107,6 +118,7 @@ class AppState extends ChangeNotifier {
   void reportUser(String id) => socketService.reportUser(id);
   void toggleMic() { _micMuted = !_micMuted; socketService.toggleMic(_micMuted); notifyListeners(); }
   void setPushToTalk(bool v) { _pushToTalk = v; audioService.setPushToTalk(v); notifyListeners(); }
+  void setSpeedUnit(String unit) { _speedUnit = unit; notifyListeners(); }
   void startSpeaking() { socketService.pushToTalk(true); audioService.startSpeaking(); }
   void stopSpeaking() { socketService.pushToTalk(false); audioService.stopSpeaking(); }
   void clearError() { _error = null; notifyListeners(); }

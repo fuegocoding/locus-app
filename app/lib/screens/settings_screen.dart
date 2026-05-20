@@ -41,6 +41,14 @@ class SettingsScreen extends StatelessWidget {
             value: state.pushToTalk,
             onChanged: (v) => state.setPushToTalk(v),
           ),
+          _sectionHeader('Speed Unit', theme),
+          ListTile(
+            leading: const Icon(Icons.speed),
+            title: const Text('Display Unit'),
+            subtitle: Text(_unitLabel(state.speedUnitSetting)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showSpeedUnitSheet(context, state),
+          ),
           _sectionHeader('Background', theme),
           SwitchListTile(
             secondary: const Icon(Icons.phone_android),
@@ -70,6 +78,50 @@ class SettingsScreen extends StatelessWidget {
         style: theme.textTheme.titleSmall?.copyWith(
           color: theme.colorScheme.primary,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  String _unitLabel(String unit) {
+    switch (unit) {
+      case 'kmh': return 'km/h';
+      case 'mph': return 'mph';
+      default: return 'Auto (based on locale)';
+    }
+  }
+
+  void _showSpeedUnitSheet(BuildContext context, AppState state) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Speed Unit', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_mode),
+              title: const Text('Default'),
+              subtitle: const Text('Auto-detect based on your locale'),
+              trailing: state.speedUnitSetting == 'default' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { state.setSpeedUnit('default'); Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.speed),
+              title: const Text('km/h'),
+              trailing: state.speedUnitSetting == 'kmh' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { state.setSpeedUnit('kmh'); Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.speed),
+              title: const Text('mph'),
+              trailing: state.speedUnitSetting == 'mph' ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { state.setSpeedUnit('mph'); Navigator.pop(context); },
+            ),
+          ],
         ),
       ),
     );
