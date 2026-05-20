@@ -147,33 +147,6 @@ class _MapWidgetState extends State<MapWidget> {
             }),
           ],
         ),
-        // Speed/heading indicator overlay
-        if (state.speed > 0)
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: userLocation,
-                width: 120,
-                height: 30,
-                alignment: Alignment.topCenter,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${state.speed.toStringAsFixed(0)} mph',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
       ],
     );
   }

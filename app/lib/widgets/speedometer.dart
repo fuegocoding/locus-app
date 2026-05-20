@@ -10,7 +10,7 @@ class Speedometer extends StatelessWidget {
     super.key,
     required this.speedKmh,
     this.unit = 'kmh',
-    this.size = 100,
+    this.size = 110,
   });
 
   double get _displaySpeed {
@@ -37,25 +37,19 @@ class Speedometer extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.black.withOpacity(0.75),
-              border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.3),
-                  blurRadius: 12,
-                  spreadRadius: -2,
-                ),
-              ],
+              color: Colors.black.withOpacity(0.6),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.15),
+                width: 1.5,
+              ),
             ),
           ),
-          SizedBox(
-            width: size,
-            height: size,
-            child: CircularProgressIndicator(
-              value: pct,
-              strokeWidth: 4,
-              backgroundColor: Colors.white.withOpacity(0.06),
-              valueColor: AlwaysStoppedAnimation(color),
+          CustomPaint(
+            size: Size(size, size),
+            painter: _ArcPainter(
+              progress: pct,
+              color: color,
+              strokeWidth: size * 0.06,
             ),
           ),
           Column(
@@ -65,19 +59,18 @@ class Speedometer extends StatelessWidget {
                 speed.toStringAsFixed(0),
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: size * 0.26,
+                  fontSize: size * 0.28,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
                   height: 1,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 unit.toUpperCase(),
                 style: TextStyle(
-                  color: color,
+                  color: Colors.white.withOpacity(0.5),
                   fontSize: size * 0.12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -92,5 +85,60 @@ class Speedometer extends StatelessWidget {
     if (pct < 0.6) return const Color(0xFFFACC15);
     if (pct < 0.8) return const Color(0xFFFB923C);
     return const Color(0xFFEF4444);
+  }
+}
+
+class _ArcPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final double strokeWidth;
+
+  _ArcPainter({
+    required this.progress,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    // Background track
+    final trackPaint = Paint()
+      ..color = Colors.white.withOpacity(0.1)
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      pi * 0.75,
+      pi * 1.5,
+      false,
+      trackPaint,
+    );
+
+    // Progress arc
+    if (progress > 0) {
+      final progressPaint = Paint()
+        ..color = color
+        ..strokeWidth = strokeWidth
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        pi * 0.75,
+        pi * 1.5 * progress,
+        false,
+        progressPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArcPainter old) {
+    return old.progress != progress || old.color != color;
   }
 }

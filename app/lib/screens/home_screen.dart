@@ -48,20 +48,17 @@ class _HomeScreenState extends State<HomeScreen> {
             const ConvoyPanel(),
           _buildBottomBar(state, theme),
           Positioned(
-            bottom: 6,
-            left: 15,
+            bottom: 8,
+            left: 16,
+            child: _buildMicCircle(state, theme),
+          ),
+          Positioned(
+            bottom: 8,
+            right: 16,
             child: Speedometer(
               speedKmh: state.speed,
               unit: state.resolvedSpeedUnit,
-              size: 96,
-            ),
-          ),
-          Positioned(
-            bottom: 6,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _buildMicCircle(state, theme),
+              size: 110,
             ),
           ),
           if (_isHolding && state.pushToTalk && !_swipedToLock)
@@ -173,47 +170,66 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomBar(AppState state, ThemeData theme) {
     return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: 24,
+      left: 100,
+      right: 100,
       child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.85),
-          border: Border(
-            top: BorderSide(color: theme.colorScheme.outline.withOpacity(0.15)),
+          color: theme.colorScheme.surface.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.15),
+            width: 1,
           ),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            const Text(
-              'Live',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.greenAccent,
-                fontWeight: FontWeight.bold,
-              ),
+            _barButton(
+              state.pushToTalk ? Icons.touch_app : Icons.mic,
+              state.pushToTalk ? 'PTT' : 'Open',
+              () => state.setPushToTalk(!state.pushToTalk),
             ),
-            const Spacer(),
-            _barButton(Icons.groups, () => _showConvoySheet(context, state)),
-            const SizedBox(width: 16),
-            _barButton(Icons.people, () => _showNearbySheet(context, state)),
+            _barButton(Icons.groups, 'Convoy', () => _showConvoySheet(context, state)),
+            _barButton(Icons.people, 'Nearby', () => _showNearbySheet(context, state)),
           ],
         ),
       ),
     );
   }
 
-  Widget _barButton(IconData icon, VoidCallback onTap) {
+  Widget _barButton(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Icon(icon, size: 18, color: Colors.white54),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 22, color: Colors.white70),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.white60,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildMicCircle(AppState state, ThemeData theme) {
-    if (state.pushToTalk) {
+    final isPtt = state.pushToTalk;
+    final isActive = isPtt ? _isHolding : !state.micMuted;
+    final icon = state.micMuted && !isPtt ? Icons.mic_off : Icons.mic;
+    final color = isActive
+        ? const Color(0xFFC4B5FD)
+        : Colors.grey.shade700;
+
+    if (isPtt) {
       return GestureDetector(
         onPanStart: (_) {
           setState(() {
@@ -240,40 +256,32 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() { _isHolding = false; _dragY = 0; });
           if (!_swipedToLock) state.stopSpeaking();
         },
-        child: _micContainer(
-          theme,
-          state.micMuted ? Icons.mic_off : Icons.mic,
-          state.micMuted ? theme.colorScheme.error : theme.colorScheme.primary,
-        ),
+        child: _micContainer(theme, icon, color),
       );
     }
     return GestureDetector(
       onTap: () => state.toggleMic(),
-      child: _micContainer(
-        theme,
-        state.micMuted ? Icons.mic_off : Icons.mic,
-        state.micMuted ? theme.colorScheme.error : theme.colorScheme.primary,
-      ),
+      child: _micContainer(theme, icon, color),
     );
   }
 
   Widget _micContainer(ThemeData theme, IconData icon, Color color) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: 100,
-      height: 100,
+      width: 80,
+      height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: _isHolding ? color.withOpacity(0.9) : color,
+        color: color,
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(_isHolding ? 0.6 : 0.4),
-            blurRadius: _isHolding ? 32 : 24,
-            spreadRadius: _isHolding ? 8 : 4,
+            color: color.withOpacity(_isHolding ? 0.6 : 0.3),
+            blurRadius: _isHolding ? 32 : 20,
+            spreadRadius: _isHolding ? 8 : 2,
           ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 40),
+      child: Icon(icon, color: Colors.white, size: 36),
     );
   }
 
