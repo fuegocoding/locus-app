@@ -20,7 +20,7 @@ RUN npm ci --only=production
 COPY --from=builder /app/dist ./dist
 
 # Copy Flutter web build
-COPY app/build/web ./app/build/web
+COPY app/build/web /app/build/web
 
 EXPOSE 3001
 
