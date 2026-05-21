@@ -5,7 +5,6 @@ import '../widgets/map_widget.dart';
 import '../widgets/proximity_overlay.dart';
 import '../widgets/convoy_panel.dart';
 import '../widgets/speedometer.dart';
-import '../widgets/video_grid.dart';
 import 'tasks_screen.dart';
 import 'settings_screen.dart';
 import 'social_tab.dart';
@@ -78,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ProximityOverlay(topOffset: proximityTop)
           else if (state.mode == 'convoy') ...[
             const ConvoyPanel(),
-            const VideoGrid(),
           ],
 
           // ── Convoy invite banner ─────────────────────────────────────────

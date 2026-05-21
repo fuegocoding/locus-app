@@ -163,5 +163,9 @@ export interface ServerToClientEvents {
     pinnedByUserId: string;
     pinnedByDisplayName: string;
   }) => void;
+  'friend:added': (data: {
+    friendId: string;
+    displayName?: string;
+  }) => void;
 }
 

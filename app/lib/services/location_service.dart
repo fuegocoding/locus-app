@@ -88,6 +88,19 @@ class LocationService {
 
   Position? getLastPosition() => _lastPosition;
 
+  Future<Position?> getLastKnownPosition() async {
+    try {
+      if (!_hasPermission) {
+        final status = await Permission.location.status;
+        _hasPermission = status.isGranted;
+      }
+      if (_hasPermission) {
+        return await Geolocator.getLastKnownPosition();
+      }
+    } catch (_) {}
+    return null;
+  }
+
   void stopLocationUpdates() {
     _isRunning = false;
     _positionStream?.cancel();

@@ -92,6 +92,7 @@ class _SocialTabScreenState extends State<SocialTabScreen> {
                 border: Border.all(color: const Color(0xFF30363D)),
               ),
               child: TextField(
+                autofocus: widget.autoFocus,
                 controller: _searchController,
                 focusNode: _searchFocus,
                 onChanged: (val) => _onSearchChanged(val, state),

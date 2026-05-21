@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/socket_service.dart';
@@ -9,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppState extends ChangeNotifier {
   static const String _devUrl = 'http://localhost:3001';
@@ -99,20 +101,50 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     await apiService.loadToken();
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load last cached coordinates immediately to prevent New York map jump
+    final lastLat = prefs.getDouble('last_latitude');
+    final lastLng = prefs.getDouble('last_longitude');
+    if (lastLat != null && lastLng != null) {
+      _latitude = lastLat;
+      _longitude = lastLng;
+    }
+
     if (apiService.hasToken) {
+      final cachedProfile = prefs.getString('cached_profile');
+      if (cachedProfile != null) {
+        try {
+          _user = User.fromJson(jsonDecode(cachedProfile));
+          _isAuthenticated = true;
+        } catch (_) {}
+      }
+
       try {
         final p = await apiService.getProfile();
         if (p != null) {
           _user = User.fromJson(p);
           _isAuthenticated = true;
+          await prefs.setString('cached_profile', jsonEncode(p));
           _connectSocket();
           initPushNotifications();
           loadFriends();
           loadPendingInvites();
         }
       } catch (e) {
-        _error = 'Failed to load profile';
-        await apiService.clearToken();
+        if (e is AuthException) {
+          _error = 'Session expired';
+          _isAuthenticated = false;
+          _user = null;
+          await apiService.clearToken();
+        } else {
+          // Network or server error: do NOT log out!
+          _error = 'Connecting offline...';
+          _connectSocket();
+          if (_user != null) {
+            _isAuthenticated = true;
+          }
+        }
       }
     }
     notifyListeners();
@@ -181,6 +213,29 @@ class AppState extends ChangeNotifier {
       _error = 'Failed to update profile';
     }
     _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> toggleAnonymousMode(bool value) async {
+    try {
+      final r = await apiService.updateProfile({'anonymousMode': value});
+      if (r['anonymousMode'] == value) {
+        _user?.anonymousMode = value;
+
+        // Also update cached profile in SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        if (_user != null) {
+          await prefs.setString('cached_profile', jsonEncode(_user!.toJson()));
+        }
+
+        notifyListeners();
+        return true;
+      }
+      _error = r['error'] ?? 'Failed to update settings';
+    } catch (e) {
+      _error = 'Failed to update settings';
+    }
     notifyListeners();
     return false;
   }
@@ -271,6 +326,7 @@ class AppState extends ChangeNotifier {
     socketService.pinnedYouStream.listen((data) {
       _pinnedByMessage = '${data['pinnedByDisplayName']} pinned you on the map!';
       notifyListeners();
+      loadFriends(); // Reload friends to see if we became mutual friends!
       Future.delayed(const Duration(seconds: 5), () {
         if (_pinnedByMessage != null) {
           _pinnedByMessage = null;
@@ -330,6 +386,22 @@ class AppState extends ChangeNotifier {
 
   void startLocation() {
     locationService.startLocationUpdates();
+
+    // Asynchronously fetch last known position to get a quick coordinate update if available
+    locationService.getLastKnownPosition().then((pos) {
+      if (pos != null && _latitude == 0 && _longitude == 0) {
+        _latitude = pos.latitude;
+        _longitude = pos.longitude;
+        socketService.updatePresence(
+          latitude: _latitude,
+          longitude: _longitude,
+          speed: 0,
+          heading: 0,
+        );
+        notifyListeners();
+      }
+    });
+
     locationService.positionStream.listen((p) {
       _latitude = p['latitude']!;
       _longitude = p['longitude']!;
@@ -341,6 +413,10 @@ class AppState extends ChangeNotifier {
         speed: _speed,
         heading: _heading,
       );
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setDouble('last_latitude', _latitude);
+        prefs.setDouble('last_longitude', _longitude);
+      });
       notifyListeners();
     });
   }
@@ -364,7 +440,10 @@ class AppState extends ChangeNotifier {
   void createConvoy(String n) => socketService.createConvoy(n, 'invite-only');
   void joinConvoy(String c) => socketService.joinConvoy(c);
   void leaveConvoy() => socketService.leaveConvoy();
-  void pinUser(String id) => socketService.pinUser(id);
+  void pinUser(String id) {
+    socketService.pinUser(id);
+    Future.delayed(const Duration(milliseconds: 500), () => loadFriends());
+  }
   void unpinUser(String id) => socketService.unpinUser(id);
   void muteUser(String id) => socketService.muteUser(id);
   void blockUser(String id) => socketService.blockUser(id);

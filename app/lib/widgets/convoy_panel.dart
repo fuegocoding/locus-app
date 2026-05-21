@@ -86,32 +86,7 @@ class ConvoyPanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: Icon(
-                  state.videoEnabled ? Icons.videocam_off : Icons.videocam,
-                  size: 18,
-                  color: state.videoEnabled ? Colors.red[300] : const Color(0xFFC4B5FD),
-                ),
-                label: Text(
-                  state.videoEnabled ? 'Stop Video' : 'Start Video',
-                  style: TextStyle(
-                    color: state.videoEnabled ? Colors.red[300] : const Color(0xFFC4B5FD),
-                    fontSize: 13,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: (state.videoEnabled ? Colors.red : const Color(0xFF6C63FF)).withOpacity(0.4),
-                  ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                ),
-                onPressed: () => state.toggleVideo(),
-              ),
-            ),
+
           ],
         ),
       ),

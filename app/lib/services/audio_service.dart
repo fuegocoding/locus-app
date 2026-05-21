@@ -6,6 +6,7 @@ class AudioService {
   Room? _room;
   EventsListener<RoomEvent>? _roomListener;
   bool _isConnected = false;
+  bool _isConnecting = false;
   bool _isMuted = false;
   bool _pushToTalk = false;
   bool _isSpeaking = false;
@@ -30,13 +31,16 @@ class AudioService {
   bool get videoEnabled => _videoEnabled;
 
   Future<void> connect(String url, String token) async {
-    if (_isConnected) await disconnect();
-
-    _currentRoom = url;
-    _currentToken = token;
-    _reconnectAttempts = 0;
+    if (_isConnecting) return;
+    _isConnecting = true;
 
     try {
+      if (_isConnected) await disconnect();
+
+      _currentRoom = url;
+      _currentToken = token;
+      _reconnectAttempts = 0;
+
       final room = Room(
         roomOptions: const RoomOptions(
           adaptiveStream: false,
@@ -58,6 +62,9 @@ class AudioService {
       _room = room;
       _isConnected = true;
       _connectionController.add(true);
+
+      // Auto-publish/unmute local microphone track if not muted
+      await _room!.localParticipant?.setMicrophoneEnabled(!_isMuted);
 
       room.addListener(() {
         if (room.connectionState == ConnectionState.disconnected) {
@@ -85,10 +92,13 @@ class AudioService {
       _connectionController.add(false);
       _handleReconnect();
       rethrow;
+    } finally {
+      _isConnecting = false;
     }
   }
 
   Future<void> reconnect(String url, String token) async {
+    if (_isConnecting) return;
     await disconnect();
     await connect(url, token);
   }
@@ -197,6 +207,7 @@ class AudioService {
     if (_room != null) {
       try {
         await _room!.disconnect();
+        await Future.delayed(const Duration(milliseconds: 500));
       } catch (e) {
         print('[Audio] Disconnect error: $e');
       }
@@ -204,7 +215,6 @@ class AudioService {
     }
 
     _isConnected = false;
-    _isMuted = false;
     _isSpeaking = false;
     _videoEnabled = false;
     _volumes.clear();

@@ -218,7 +218,7 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
       dataToUpdate.displayName = newName;
     }
 
-    const allowedFields = ['avatar', 'vehicleTag', 'privacyMode'];
+    const allowedFields = ['avatar', 'vehicleTag', 'privacyMode', 'anonymousMode'];
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         dataToUpdate[field] = req.body[field];
@@ -230,6 +230,18 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
       data: dataToUpdate,
       include: { pins: true }
     });
+
+    // Update in-memory socket details
+    try {
+      const { updateConnectedUserDetails } = require('../socket');
+      updateConnectedUserDetails(
+        updatedUser.id,
+        updatedUser.displayName,
+        updatedUser.anonymousMode
+      );
+    } catch (err) {
+      // Non-critical socket sync fail
+    }
 
     res.json({
       ...updatedUser,

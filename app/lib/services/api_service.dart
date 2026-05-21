@@ -43,8 +43,13 @@ class ApiService {
   Future<Map<String, dynamic>?> getProfile() async {
     if (authToken == null) return null;
     final r = await http.get(Uri.parse('$baseUrl/api/auth/me'), headers: _headers);
-    if (r.statusCode == 200) return jsonDecode(r.body);
-    return null;
+    if (r.statusCode == 200) {
+      return jsonDecode(r.body);
+    } else if (r.statusCode == 401 || r.statusCode == 403) {
+      throw AuthException('Session expired');
+    } else {
+      throw Exception('Server returned status code: ${r.statusCode}');
+    }
   }
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> updates) async {
     final r = await http.patch(Uri.parse('$baseUrl/api/auth/me'), headers: _headers, body: jsonEncode(updates));
@@ -136,4 +141,11 @@ class ApiService {
     }
     await clearToken();
   }
+}
+
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
+  @override
+  String toString() => message;
 }

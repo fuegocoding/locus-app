@@ -63,7 +63,9 @@ export async function updatePresence(
   heading: number,
   privacyMode: string,
   mode: string,
-  convoyId?: string
+  convoyId?: string,
+  displayName?: string,
+  anonymousMode?: boolean
 ): Promise<void> {
   const r = getRedis();
   const presence = JSON.stringify({
@@ -75,6 +77,8 @@ export async function updatePresence(
     privacyMode,
     mode,
     convoyId,
+    displayName,
+    anonymousMode,
     timestamp: Date.now(),
   });
 
@@ -101,7 +105,7 @@ export async function getPresence(userId: string): Promise<PresenceUpdate | null
   return JSON.parse(data);
 }
 
-interface PresenceUpdate {
+export interface PresenceUpdate {
   userId: string;
   latitude: number;
   longitude: number;
@@ -111,6 +115,8 @@ interface PresenceUpdate {
   mode: 'proximity' | 'convoy';
   convoyId?: string;
   timestamp: number;
+  displayName?: string;
+  anonymousMode?: boolean;
 }
 
 export async function getNearbyUsers(

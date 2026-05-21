@@ -7,6 +7,7 @@ class User {
   String privacyMode;
   int points;
   bool premium;
+  bool anonymousMode;
   List<String> pins;
 
   User({
@@ -18,6 +19,7 @@ class User {
     this.privacyMode = 'open',
     this.points = 0,
     this.premium = false,
+    this.anonymousMode = false,
     List<String>? pins,
   }) : pins = pins ?? [];
 
@@ -31,6 +33,7 @@ class User {
       privacyMode: json['privacyMode'] ?? 'open',
       points: json['points'] ?? 0,
       premium: json['premium'] ?? false,
+      anonymousMode: json['anonymousMode'] ?? false,
       pins: List<String>.from(json['pins'] ?? []),
     );
   }
@@ -44,6 +47,7 @@ class User {
     'privacyMode': privacyMode,
     'points': points,
     'premium': premium,
+    'anonymousMode': anonymousMode,
     'pins': pins,
   };
 }
@@ -58,6 +62,8 @@ class PresenceUpdate {
   final String mode;
   final String? convoyId;
   final int timestamp;
+  final String? displayName;
+  final bool? anonymousMode;
 
   PresenceUpdate({
     required this.userId,
@@ -69,6 +75,8 @@ class PresenceUpdate {
     required this.mode,
     this.convoyId,
     required this.timestamp,
+    this.displayName,
+    this.anonymousMode,
   });
 
   factory PresenceUpdate.fromJson(Map<String, dynamic> json) {
@@ -82,6 +90,8 @@ class PresenceUpdate {
       mode: json['mode'],
       convoyId: json['convoyId'],
       timestamp: json['timestamp'],
+      displayName: json['displayName'],
+      anonymousMode: json['anonymousMode'],
     );
   }
 }

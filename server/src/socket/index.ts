@@ -22,13 +22,45 @@ interface ConnectedUser {
   speed: number;
   heading: number;
   videoEnabled: boolean;
+  displayName: string;
+  anonymousMode: boolean;
 }
 
 const connectedUsers = new Map<string, ConnectedUser>();
 
+const adjectives = ['Silent', 'Swift', 'Quiet', 'Shadowy', 'Stealthy', 'Hidden', 'Mysterious', 'Cunning', 'Wild', 'Lone', 'Frosty', 'Rusty', 'Golden', 'Silver', 'Iron'];
+const animals = ['Badger', 'Falcon', 'Coyote', 'Fox', 'Wolf', 'Panther', 'Eagle', 'Hawk', 'Otter', 'Raccoon', 'Owl', 'Bear', 'Deer', 'Lynx', 'Puma'];
+
+export function getAnonymousName(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const adjIndex = Math.abs(hash) % adjectives.length;
+  const animIndex = Math.abs(hash + 13) % animals.length;
+  return `${adjectives[adjIndex]} ${animals[animIndex]}`;
+}
+
 export function setupSocketHandlers(io: TypedServer): void {
   io.on('connection', (socket: TypedSocket) => {
     console.log(`[Socket] Connected: ${socket.id}`);
+
+    // Fetch initial profile details from DB
+    const userId = (socket as any).userId;
+    if (userId) {
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true, anonymousMode: true }
+      }).then((dbUser) => {
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+          user.displayName = dbUser?.displayName || `User_${userId.slice(0, 6)}`;
+          user.anonymousMode = dbUser?.anonymousMode ?? false;
+        }
+      }).catch((err) => {
+        console.error('[Socket] Error fetching user profile on connect:', err);
+      });
+    }
 
     socket.on('disconnect', async () => {
       console.log(`[Socket] Disconnected: ${socket.id}`);
@@ -59,7 +91,9 @@ export function setupSocketHandlers(io: TypedServer): void {
         data.heading,
         'open',
         user.mode,
-        user.convoyId
+        user.convoyId,
+        user.displayName,
+        user.anonymousMode
       );
 
       if (user.mode === 'proximity') {
@@ -86,7 +120,7 @@ export function setupSocketHandlers(io: TypedServer): void {
           if (friendIds.has(cu.userId)) {
             io.to(sid).emit('friends:location', {
               userId: user.userId,
-              displayName: `User_${user.userId.slice(0, 6)}`,
+              displayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
               latitude: user.latitude,
               longitude: user.longitude,
               heading: user.heading,
@@ -280,8 +314,46 @@ export function setupSocketHandlers(io: TypedServer): void {
         const [targetSocketId] = targetSocketEntry;
         io.to(targetSocketId).emit('user:pinned-you', {
           pinnedByUserId: user.userId,
-          pinnedByDisplayName: `User_${user.userId.slice(0, 6)}`,
+          pinnedByDisplayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
         });
+      }
+
+      // Check if target user has pinned user back
+      const reciprocalPin = await prisma.pin.findUnique({
+        where: {
+          userId_targetUserId: {
+            userId: data.targetUserId,
+            targetUserId: user.userId
+          }
+        }
+      });
+
+      if (reciprocalPin) {
+        // Create mutual follow records
+        await prisma.follow.upsert({
+          where: { followerId_followingId: { followerId: user.userId, followingId: data.targetUserId } },
+          create: { followerId: user.userId, followingId: data.targetUserId },
+          update: {}
+        });
+        await prisma.follow.upsert({
+          where: { followerId_followingId: { followerId: data.targetUserId, followingId: user.userId } },
+          create: { followerId: data.targetUserId, followingId: user.userId },
+          update: {}
+        });
+
+        // Notify both clients of the new mutual friend
+        socket.emit('friend:added', {
+          friendId: data.targetUserId,
+          displayName: reciprocalPin ? (await prisma.user.findUnique({ where: { id: data.targetUserId } }))?.displayName : undefined
+        });
+
+        if (targetSocketEntry) {
+          const [targetSocketId] = targetSocketEntry;
+          io.to(targetSocketId).emit('friend:added', {
+            friendId: user.userId,
+            displayName: user.displayName
+          });
+        }
       }
     });
 
@@ -349,8 +421,29 @@ export function setupSocketHandlers(io: TypedServer): void {
   });
 }
 
-export function addConnectedUser(socketId: string, user: Omit<ConnectedUser, 'videoEnabled'>): void {
-  connectedUsers.set(socketId, { ...user, videoEnabled: false });
+export function addConnectedUser(
+  socketId: string,
+  user: Omit<ConnectedUser, 'videoEnabled' | 'displayName' | 'anonymousMode'> & { displayName?: string; anonymousMode?: boolean }
+): void {
+  connectedUsers.set(socketId, {
+    ...user,
+    displayName: user.displayName || `User_${user.userId.slice(0, 6)}`,
+    anonymousMode: user.anonymousMode || false,
+    videoEnabled: false,
+  });
+}
+
+export function updateConnectedUserDetails(
+  userId: string,
+  displayName: string,
+  anonymousMode: boolean
+): void {
+  for (const user of connectedUsers.values()) {
+    if (user.userId === userId) {
+      user.displayName = displayName;
+      user.anonymousMode = anonymousMode;
+    }
+  }
 }
 
 async function handleProximityUpdate(
@@ -381,6 +474,8 @@ async function handleProximityUpdate(
     volumeUpdates.push({ userId: nearby.userId, volume });
   }
 
+  const oldRoomId = user.proximityRoomId;
+
   if (user.proximityRoomId && user.proximityRoomId !== roomId) {
     proximity.removeFromProximityRoom(user.userId, user.proximityRoomId);
   }
@@ -395,7 +490,9 @@ async function handleProximityUpdate(
       participants: [user.userId],
       createdAt: Date.now(),
     });
+  }
 
+  if (oldRoomId !== roomId) {
     const token = await livekit.generateToken(roomId, user.userId);
     socket.emit('audio:token', {
       room: roomId,
@@ -405,7 +502,14 @@ async function handleProximityUpdate(
     });
   }
 
-  socket.emit('presence:neighbors', nearbyUsers as any);
+  const mappedNearbyUsers = nearbyUsers.map(u => {
+    return {
+      ...u,
+      displayName: u.anonymousMode ? getAnonymousName(u.userId) : (u.displayName || `User_${u.userId.slice(0, 6)}`),
+    };
+  });
+
+  socket.emit('presence:neighbors', mappedNearbyUsers as any);
   for (const v of volumeUpdates) {
     socket.emit('audio:volume-update', v);
   }

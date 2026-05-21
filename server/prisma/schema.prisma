@@ -11,6 +11,7 @@ model User {
   phone            String             @unique
   displayName      String             @unique
   privacyMode      String             @default("open")
+  anonymousMode    Boolean            @default(false)
   points           Int                @default(0)
   premium          Boolean            @default(false)
   createdAt        DateTime           @default(now())

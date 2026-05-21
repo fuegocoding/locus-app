@@ -33,6 +33,13 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showPrivacySheet(context, state),
           ),
+          SwitchListTile(
+            secondary: const Icon(Icons.masks),
+            title: const Text('Anonymous Mode'),
+            subtitle: const Text('Masks your username to nearby users'),
+            value: state.user?.anonymousMode ?? false,
+            onChanged: (v) => state.toggleAnonymousMode(v),
+          ),
           _sectionHeader('Audio', theme),
           SwitchListTile(
             secondary: const Icon(Icons.mic),

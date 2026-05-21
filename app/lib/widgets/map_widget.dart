@@ -150,7 +150,9 @@ class MapWidgetState extends State<MapWidget> {
                   final isSpeaking = state.speaking[user.userId] == true;
                   final isPinned = state.user?.pins.contains(user.userId) ?? false;
                   final volume = state.volumes[user.userId] ?? 0.5;
-                  final displayName = user.userId.substring(0, 8);
+                  final displayName = (user.displayName != null && user.displayName!.isNotEmpty)
+                      ? user.displayName!
+                      : user.userId.substring(0, 8);
 
                   return Marker(
                     point: LatLng(user.latitude, user.longitude),
@@ -217,6 +219,9 @@ class MapWidgetState extends State<MapWidget> {
   }
 
   void _showUserSheet(BuildContext context, AppState state, user, bool isPinned) {
+    final displayName = (user.displayName != null && user.displayName!.isNotEmpty)
+        ? user.displayName!
+        : user.userId.substring(0, 8);
     showModalBottomSheet(
       context: context,
       builder: (_) => SafeArea(
@@ -230,7 +235,7 @@ class MapWidgetState extends State<MapWidget> {
                 children: [
                   CircleAvatar(
                     backgroundColor: isPinned ? Colors.amber : Theme.of(context).colorScheme.primary,
-                    child: Text(user.userId.substring(0, 1).toUpperCase()),
+                    child: Text(displayName.substring(0, 1).toUpperCase()),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -238,7 +243,7 @@ class MapWidgetState extends State<MapWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.userId.substring(0, 8),
+                          displayName,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
