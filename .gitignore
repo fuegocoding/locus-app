@@ -3,7 +3,7 @@ node_modules/
 
 # Build
 dist/
-build/
+# app/build/ (keep web build for deployment)
 
 # IDE
 .vscode/

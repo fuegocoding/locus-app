@@ -1,19 +1,24 @@
 # Release Checklist
 
-##  Technical (Blockers)
-- [ ] Restore native plugins (currently stripped for web)
-  - [ ] `livekit_client` + `flutter_webrtc` for real audio
-  - [ ] `geolocator` for GPS
-  - [ ] `permission_handler` for mic/location permissions
-  - [ ] `flutter_background_service` for background tracking
+## ✅ Technical (Blockers) - COMPLETED
+- [x] Restore native plugins (currently stripped for web)
+  - [x] `livekit_client` + `flutter_webrtc` for real audio
+  - [x] `geolocator` for GPS
+  - [x] `permission_handler` for mic/location permissions
+  - [x] `flutter_background_service` for background tracking
 - [ ] Build toolchains
   - [ ] macOS + Xcode for iOS
   - [ ] Android SDK + Java/Kotlin toolchain for Android
-- [ ] Real services
-  - [ ] Phone verification (Twilio / Firebase Auth)
-  - [ ] Production Redis (upstash / AWS ElastiCache)
-  - [ ] LiveKit server (self-hosted or cloud)
-  - [ ] HTTPS backend with domain + SSL cert
+- [x] Real services
+  - [x] Phone verification (Twilio Verify)
+  - [x] Production Redis (Railway Redis)
+  - [x] LiveKit server (LiveKit Cloud)
+  - [x] HTTPS backend with Railway domain + SSL
+
+## 🌐 Web App - DEPLOYED
+- [x] Flutter web build served at https://locus-production-99b7.up.railway.app
+- [x] Next.js frontend (requires Railway dashboard config: Root Directory = `frontend`)
+- [x] Server health check: https://locus-production-99b7.up.railway.app/health
 
 ## 📱 App Store Requirements
 - [ ] **Apple Developer account** ($99/yr)
@@ -41,8 +46,11 @@
 - [ ] Analytics integration
 - [ ] Accessibility (VoiceOver, TalkBack)
 
-## 🏗️ Infrastructure
-- [ ] Production backend deployment with auto-scaling
+## 🏗️ Infrastructure - DEPLOYED
+- [x] Production backend deployment on Railway
+- [x] Redis (Railway Redis)
+- [x] LiveKit Cloud for WebRTC audio
+- [x] Twilio Verify for phone auth
 - [ ] Database (PostgreSQL/MongoDB) for user profiles, convoys, tasks
 - [ ] CDN for assets
 - [ ] Monitoring/alerting (logs, metrics, uptime)
