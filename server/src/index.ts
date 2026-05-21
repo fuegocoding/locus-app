@@ -23,21 +23,7 @@ const isProd = process.env.NODE_ENV === 'production';
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: isProd ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-eval'", "https://www.gstatic.com"],
-      workerSrc: ["'self'", "blob:"],
-      styleSrc: ["'self'", "https:", "'unsafe-inline'"],
-      fontSrc: ["'self'", "https:", "data:"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https:", "ws:", "wss:"],
-      mediaSrc: ["'self'"],
-      frameAncestors: ["'self'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-    },
-  } : false,
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
 
