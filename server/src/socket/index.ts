@@ -20,6 +20,7 @@ interface ConnectedUser {
   longitude: number;
   speed: number;
   heading: number;
+  videoEnabled: boolean;
 }
 
 const connectedUsers = new Map<string, ConnectedUser>();
@@ -281,11 +282,33 @@ export function setupSocketHandlers(io: TypedServer): void {
       if (!user) return;
       io.emit('audio:speaking', { userId: user.userId, speaking: !data.muted });
     });
+
+    socket.on('video:start', async () => {
+      const user = connectedUsers.get(socket.id);
+      if (!user || user.mode !== 'convoy' || !user.convoyId) return;
+      user.videoEnabled = true;
+      for (const [sid, cu] of connectedUsers) {
+        if (cu.convoyId === user.convoyId && cu.userId !== user.userId) {
+          io.to(sid).emit('video:participant-started', { userId: user.userId });
+        }
+      }
+    });
+
+    socket.on('video:stop', async () => {
+      const user = connectedUsers.get(socket.id);
+      if (!user || !user.convoyId) return;
+      user.videoEnabled = false;
+      for (const [sid, cu] of connectedUsers) {
+        if (cu.convoyId === user.convoyId && cu.userId !== user.userId) {
+          io.to(sid).emit('video:participant-stopped', { userId: user.userId });
+        }
+      }
+    });
   });
 }
 
-export function addConnectedUser(socketId: string, user: ConnectedUser): void {
-  connectedUsers.set(socketId, user);
+export function addConnectedUser(socketId: string, user: Omit<ConnectedUser, 'videoEnabled'>): void {
+  connectedUsers.set(socketId, { ...user, videoEnabled: false });
 }
 
 async function handleProximityUpdate(

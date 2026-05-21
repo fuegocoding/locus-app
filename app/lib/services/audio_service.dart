@@ -7,6 +7,7 @@ class AudioService {
   bool _isMuted = false;
   bool _pushToTalk = false;
   bool _isSpeaking = false;
+  bool _videoEnabled = false;
   final _connectionController = StreamController<bool>.broadcast();
   final _speakingController = StreamController<String>.broadcast();
   final _volumeController = StreamController<Map<String, double>>.broadcast();
@@ -24,6 +25,7 @@ class AudioService {
   bool get isMuted => _isMuted;
   bool get pushToTalk => _pushToTalk;
   bool get isSpeaking => _isSpeaking;
+  bool get videoEnabled => _videoEnabled;
 
   Future<void> connect(String url, String token) async {
     if (_isConnected) await disconnect();
@@ -161,6 +163,26 @@ class AudioService {
     }
   }
 
+  Future<void> startVideo() async {
+    if (!_isConnected || _room == null) return;
+    _videoEnabled = true;
+    try {
+      await _room!.localParticipant?.setCameraEnabled(true);
+    } catch (e) {
+      print('[Audio] Video start error: $e');
+    }
+  }
+
+  Future<void> stopVideo() async {
+    if (_room == null) return;
+    _videoEnabled = false;
+    try {
+      await _room!.localParticipant?.setCameraEnabled(false);
+    } catch (e) {
+      print('[Audio] Video stop error: $e');
+    }
+  }
+
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
@@ -178,6 +200,7 @@ class AudioService {
     _isConnected = false;
     _isMuted = false;
     _isSpeaking = false;
+    _videoEnabled = false;
     _volumes.clear();
     _connectionController.add(false);
   }

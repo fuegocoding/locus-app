@@ -25,6 +25,8 @@ class AppState extends ChangeNotifier {
   Convoy? _currentConvoy;
   bool _micMuted = false;
   bool _pushToTalk = false;
+  bool _videoEnabled = false;
+  Map<String, bool> _remoteVideoEnabled = {};
   String _speedUnit = 'default';
   String? _error;
   bool _isLoading = false;
@@ -52,6 +54,8 @@ class AppState extends ChangeNotifier {
   bool get pushToTalk => _pushToTalk;
   bool get isOnline => _isOnline;
   bool get isAudioConnected => audioService.isConnected;
+  bool get videoEnabled => _videoEnabled;
+  Map<String, bool> get remoteVideoEnabled => _remoteVideoEnabled;
   String get resolvedSpeedUnit {
     if (_speedUnit != 'default') return _speedUnit;
     final locale = WidgetsBinding.instance.platformDispatcher.locale;
@@ -200,6 +204,11 @@ class AppState extends ChangeNotifier {
       _error = e;
       notifyListeners();
     });
+
+    socketService.videoStream.listen((d) {
+      if (d['type'] == 'started') { _remoteVideoEnabled[d['userId']] = true; notifyListeners(); }
+      else if (d['type'] == 'stopped') { _remoteVideoEnabled[d['userId']] = false; notifyListeners(); }
+    });
   }
 
   Future<void> _connectAudio() async {
@@ -285,6 +294,13 @@ class AppState extends ChangeNotifier {
   void stopSpeaking() {
     socketService.pushToTalk(false);
     audioService.stopSpeaking();
+  }
+
+  void toggleVideo() {
+    _videoEnabled = !_videoEnabled;
+    if (_videoEnabled) { socketService.startVideo(); audioService.startVideo(); }
+    else { socketService.stopVideo(); audioService.stopVideo(); }
+    notifyListeners();
   }
 
   void clearError() {
