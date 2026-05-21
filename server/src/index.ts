@@ -49,6 +49,9 @@ app.use(cors({
   credentials: true,
 }));
 
+// Trust proxy for rate limiting behind Railway's reverse proxy
+app.set('trust proxy', 1);
+
 // Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -56,6 +59,7 @@ const authLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 const generalLimiter = rateLimit({
@@ -64,6 +68,7 @@ const generalLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 app.use('/api/auth/verify/', authLimiter);
