@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-eval needed for maplibre
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
-              "connect-src 'self' ws: wss: http://localhost:3001 https://api.maptiler.com https://*.basemaps.cartocdn.com",
+              "connect-src 'self' ws: wss: http://localhost:3001 https://api.maptiler.com https://*.basemaps.cartocdn.com https://*.railway.app https://*.livekit.cloud",
               "worker-src blob:",
               "font-src 'self'",
               "frame-ancestors 'none'",
