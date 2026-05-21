@@ -38,9 +38,9 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): bo
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now()
-    for (const [key, entry] of store.entries()) {
+    store.forEach((entry, key) => {
       if (now > entry.reset) store.delete(key)
-    }
+    })
   }, 60_000)
 }
 

@@ -281,7 +281,7 @@ router.post('/check-username', async (req: Request, res: Response): Promise<void
 });
 
 // Get convoy by invite code
-router.get('/convoy/:inviteCode', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/convoy/:inviteCode', async (req: Request, res: Response): Promise<void> => {
   try {
     const convoy = await prisma.convoy.findUnique({
       where: { inviteCode: req.params.inviteCode },
@@ -299,6 +299,36 @@ router.get('/convoy/:inviteCode', authMiddleware, async (req: AuthRequest, res: 
     res.status(500).json({ error: 'Failed to get convoy' });
   }
 });
+
+// Get public profile by username
+router.get('/user/public/:username', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        displayName: {
+          equals: req.params.username,
+          mode: 'insensitive'
+        }
+      },
+      select: {
+        id: true,
+        displayName: true,
+        points: true,
+        premium: true,
+        createdAt: true
+      }
+    });
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(user);
+  } catch (error: any) {
+    console.error('[Auth] Get public user error:', error);
+    res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
 
 // Delete user account
 router.delete('/account', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {

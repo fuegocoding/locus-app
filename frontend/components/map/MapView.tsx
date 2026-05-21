@@ -47,10 +47,17 @@ export function MapView({ onUserClick }: MapViewProps) {
           id="proximity-fill"
           type="circle"
           paint={{
-            'circle-radius': {
-              stops: [[10, 80], [14, 200], [16, 400]],
-              base: 2,
-            },
+            'circle-radius': [
+              'interpolate',
+              ['exponential', 2],
+              ['zoom'],
+              10,
+              80,
+              14,
+              200,
+              16,
+              400,
+            ],
             'circle-color': 'rgba(0, 255, 135, 0.06)',
             'circle-stroke-color': 'rgba(0, 255, 135, 0.3)',
             'circle-stroke-width': 1.5,

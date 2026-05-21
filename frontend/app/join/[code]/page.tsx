@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Users, ArrowRight, Download } from 'lucide-react'
+import { Users, ArrowRight, Download, UserPlus } from 'lucide-react'
 
 interface PageProps {
   params: { code: string }
@@ -19,14 +19,32 @@ async function getConvoy(code: string) {
   }
 }
 
+async function getPublicUser(username: string) {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/user/public/${username}`,
+      { next: { revalidate: 10 } }
+    )
+    if (!res.ok) return null
+    return res.json() as Promise<{ id: string; displayName: string; points: number; premium: boolean }>
+  } catch {
+    return null
+  }
+}
+
 export default async function JoinPage({ params }: PageProps) {
   const { code } = params
+  
+  // Try convoy invite first
   const convoy = await getConvoy(code)
+  
+  // If not found, check if it's a user referral/friend code
+  const publicUser = !convoy ? await getPublicUser(code) : null
 
   return (
     <div className="min-h-screen bg-background grid-bg flex items-center justify-center px-4 relative">
       {/* Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-convoy/8 blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/5 blur-[100px] pointer-events-none" />
 
       <div className="relative w-full max-w-sm text-center space-y-8">
         {/* Logo */}
@@ -78,17 +96,62 @@ export default async function JoinPage({ params }: PageProps) {
               </div>
             </div>
           </>
+        ) : publicUser ? (
+          <>
+            {/* User/Friend Referral card */}
+            <div className="gradient-border rounded-panel">
+              <div className="bg-surface-raised rounded-panel p-6">
+                <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center mx-auto mb-4 shadow-neon">
+                  <UserPlus className="w-6 h-6 text-primary-light" />
+                </div>
+                <h1 className="text-2xl font-black text-foreground mb-1">@{publicUser.displayName}</h1>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  {publicUser.premium && (
+                    <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-[10px] font-semibold text-primary-light tracking-wide uppercase">
+                      Premium Driver
+                    </span>
+                  )}
+                  <span className="text-muted text-sm">
+                    {publicUser.points} points
+                  </span>
+                </div>
+                <p className="mt-4 text-sm text-muted leading-relaxed max-w-[260px] mx-auto">
+                  invited you to join Locus, the proximity radar voice chat app for drivers.
+                </p>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="space-y-3">
+              <Link
+                href={`/onboarding?ref=${publicUser.displayName}`}
+                className="flex items-center justify-center gap-2 w-full py-4 bg-primary text-white rounded-xl font-bold text-base shadow-neon hover:shadow-[0_0_30px_rgba(108,99,255,0.7)] transition-all"
+              >
+                Get Started <ArrowRight className="w-4 h-4" />
+              </Link>
+              <div className="glass rounded-xl p-4 text-left space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Download className="w-4 h-4 text-primary" />
+                  Install the mobile app
+                </div>
+                <div className="flex gap-2">
+                  <AppStoreBadge label="App Store" />
+                  <AppStoreBadge label="Google Play" />
+                </div>
+              </div>
+            </div>
+          </>
         ) : (
           <>
-            {/* Not found */}
+            {/* Invite not found */}
             <div className="glass rounded-panel p-8 space-y-4">
               <div className="text-5xl">🔍</div>
-              <h1 className="text-xl font-bold text-foreground">Convoy not found</h1>
+              <h1 className="text-xl font-bold text-foreground">Invite not found</h1>
               <p className="text-sm text-muted">
-                The invite code <span className="font-mono text-foreground">{code}</span> doesn&apos;t match any active convoy.
+                The invite link or username <span className="font-mono text-foreground">{code}</span> doesn&apos;t match any active convoy or user profile.
               </p>
               <p className="text-xs text-muted">
-                Convoys expire when all members leave. Ask the organiser for a fresh invite.
+                Make sure you typed the link correctly, or ask the organiser/friend for a fresh invite link.
               </p>
             </div>
             <Link
