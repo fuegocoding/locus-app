@@ -6,6 +6,7 @@ import * as livekit from '../services/livekit';
 import * as proximity from '../services/proximity';
 import { generateInviteCode } from '../services/auth';
 import type { ClientToServerEvents, ServerToClientEvents } from '../types';
+import { prisma } from '../services/db';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -87,6 +88,7 @@ export function setupSocketHandlers(io: TypedServer): void {
         socket.emit('audio:token', {
           room: data.convoyId,
           token,
+          serverUrl: livekit.getLiveKitUrl(),
           identity: user.userId,
         });
 
@@ -137,6 +139,7 @@ export function setupSocketHandlers(io: TypedServer): void {
       socket.emit('audio:token', {
         room: livekitRoom,
         token,
+        serverUrl: livekit.getLiveKitUrl(),
         identity: user.userId,
       });
     });
@@ -145,52 +148,51 @@ export function setupSocketHandlers(io: TypedServer): void {
       const user = connectedUsers.get(socket.id);
       if (!user) return;
 
-      const allConvoys = await redis.getConvoy(`convoy:list`);
-      // Simple invite code lookup - in production, index by code
-      let foundConvoy: any = null;
-      // For now match against inviteCode via scan
-      // TODO: Replace with Redis index by invite code
-      for (const convoyId of await redis.getRedis().hkeys('locus:convoys')) {
-        const convoy = await redis.getConvoy(convoyId);
-        if (convoy && (convoy as any).inviteCode === data.inviteCode) {
-          foundConvoy = convoy;
-          break;
-        }
-      }
+      const foundConvoy = await prisma.convoy.findUnique({
+        where: { inviteCode: data.inviteCode },
+        include: { memberships: true }
+      });
 
       if (!foundConvoy) {
         socket.emit('error', { message: 'Invalid invite code', code: 'INVALID_INVITE' });
         return;
       }
 
-      if (!(foundConvoy as any).members.includes(user.userId)) {
-        (foundConvoy as any).members.push(user.userId);
-        await redis.createConvoy((foundConvoy as any).id, foundConvoy);
+      const isAlreadyMember = foundConvoy.memberships.some(m => m.userId === user.userId);
+      if (!isAlreadyMember) {
+        await prisma.convoyMembership.create({
+          data: {
+            convoyId: foundConvoy.id,
+            userId: user.userId
+          }
+        });
       }
 
+      const updatedConvoy = await redis.getConvoy(foundConvoy.id);
+
       user.mode = 'convoy';
-      user.convoyId = (foundConvoy as any).id;
+      user.convoyId = foundConvoy.id;
 
       await redis.updatePresence(
         user.userId, user.latitude, user.longitude,
-        user.speed, user.heading, 'open', 'convoy', (foundConvoy as any).id
+        user.speed, user.heading, 'open', 'convoy', foundConvoy.id
       );
 
-      const token = await livekit.generateToken((foundConvoy as any).livekitRoom, user.userId);
+      const token = await livekit.generateToken(foundConvoy.livekitRoom, user.userId);
       socket.emit('convoy:joined', {
-        convoy: foundConvoy as any,
-        members: await redis.getConvoyMembers((foundConvoy as any).id) as any,
+        convoy: updatedConvoy as any,
+        members: await redis.getConvoyMembers(foundConvoy.id) as any,
       });
       socket.emit('audio:token', {
-        room: (foundConvoy as any).livekitRoom,
+        room: foundConvoy.livekitRoom,
         token,
+        serverUrl: livekit.getLiveKitUrl(),
         identity: user.userId,
       });
 
       // Broadcast to convoy members
-      const members = await redis.getConvoyMembers((foundConvoy as any).id);
       for (const [sid, cu] of connectedUsers) {
-        if (cu.convoyId === (foundConvoy as any).id && cu.userId !== user.userId) {
+        if (cu.convoyId === foundConvoy.id && cu.userId !== user.userId) {
           io.to(sid).emit('convoy:member-joined', {
             userId: user.userId,
             latitude: user.latitude,
@@ -199,7 +201,7 @@ export function setupSocketHandlers(io: TypedServer): void {
             heading: user.heading,
             privacyMode: 'open',
             mode: 'convoy',
-            convoyId: (foundConvoy as any).id,
+            convoyId: foundConvoy.id,
             timestamp: Date.now(),
           });
         }
@@ -358,6 +360,7 @@ async function handleProximityUpdate(
     socket.emit('audio:token', {
       room: roomId,
       token,
+      serverUrl: livekit.getLiveKitUrl(),
       identity: user.userId,
     });
   }
@@ -422,3 +425,18 @@ async function handleDisconnect(
     }
   }
 }
+
+export function isUserOnline(userId: string): boolean {
+  for (const user of connectedUsers.values()) {
+    if (user.userId === userId) return true;
+  }
+  return false;
+}
+
+export function getSocketIdByUserId(userId: string): string | undefined {
+  for (const [sid, user] of connectedUsers.entries()) {
+    if (user.userId === userId) return sid;
+  }
+  return undefined;
+}
+

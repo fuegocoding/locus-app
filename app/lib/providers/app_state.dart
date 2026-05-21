@@ -4,6 +4,10 @@ import '../services/socket_service.dart';
 import '../services/location_service.dart';
 import '../services/audio_service.dart';
 import '../services/api_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AppState extends ChangeNotifier {
   static const String _devUrl = 'http://localhost:3001';
@@ -33,9 +37,20 @@ class AppState extends ChangeNotifier {
   bool _isOnline = true;
   String? _livekitRoom;
   String? _livekitToken;
+  String? _livekitServerUrl;
+
+  List<dynamic> _friends = [];
+  List<dynamic> _pendingInvites = [];
+  bool _isLoadingFriends = false;
+  bool _isLoadingInvites = false;
 
   AppState({String? serverUrl})
-      : apiService = ApiService(baseUrl: serverUrl ?? _prodUrl);
+      : apiService = ApiService(
+          baseUrl: serverUrl ??
+              (kDebugMode
+                  ? (kIsWeb ? _devUrl : 'http://10.0.2.2:3001')
+                  : _prodUrl),
+        );
 
   User? get user => _user;
   bool get isAuthenticated => _isAuthenticated;
@@ -70,6 +85,11 @@ class AppState extends ChangeNotifier {
   String? get livekitRoom => _livekitRoom;
   String? get livekitToken => _livekitToken;
 
+  List<dynamic> get friends => _friends;
+  List<dynamic> get pendingInvites => _pendingInvites;
+  bool get isLoadingFriends => _isLoadingFriends;
+  bool get isLoadingInvites => _isLoadingInvites;
+
   Future<void> init() async {
     await apiService.loadToken();
     if (apiService.hasToken) {
@@ -79,6 +99,9 @@ class AppState extends ChangeNotifier {
           _user = User.fromJson(p);
           _isAuthenticated = true;
           _connectSocket();
+          initPushNotifications();
+          loadFriends();
+          loadPendingInvites();
         }
       } catch (e) {
         _error = 'Failed to load profile';
@@ -112,15 +135,18 @@ class AppState extends ChangeNotifier {
         final p = await apiService.getProfile();
         if (p != null) _user = User.fromJson(p);
         _connectSocket();
-        notifyListeners();
+        initPushNotifications();
+        loadFriends();
+        loadPendingInvites();
         return true;
       }
       _error = r['error'] ?? 'Invalid code';
     } catch (e) {
       _error = 'Verification failed';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
     return false;
   }
 
@@ -196,6 +222,7 @@ class AppState extends ChangeNotifier {
     socketService.audioTokenStream.listen((data) {
       _livekitRoom = data['room'];
       _livekitToken = data['token'];
+      _livekitServerUrl = data['serverUrl'];
       _connectAudio();
       notifyListeners();
     });
@@ -209,12 +236,37 @@ class AppState extends ChangeNotifier {
       if (d['type'] == 'started') { _remoteVideoEnabled[d['userId']] = true; notifyListeners(); }
       else if (d['type'] == 'stopped') { _remoteVideoEnabled[d['userId']] = false; notifyListeners(); }
     });
+
+    socketService.inviteStream.listen((d) {
+      if (d['type'] == 'received') {
+        final inviteId = d['id'];
+        if (!_pendingInvites.any((x) => x['id'] == inviteId)) {
+          _pendingInvites.add({
+            'id': inviteId,
+            'convoyId': d['convoyId'],
+            'convoyName': d['convoyName'],
+            'senderId': d['senderId'],
+            'senderName': d['senderName'],
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+          notifyListeners();
+        }
+      } else if (d['type'] == 'responded') {
+        if (d['status'] == 'accepted') {
+          loadFriends();
+        }
+      }
+    });
   }
 
   Future<void> _connectAudio() async {
-    if (_livekitRoom != null && _livekitToken != null) {
+    if (_livekitServerUrl != null && _livekitToken != null) {
       try {
-        await audioService.connect(_livekitRoom!, _livekitToken!);
+        String url = _livekitServerUrl!;
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          url = url.replaceAll('localhost', '10.0.2.2').replaceAll('127.0.0.1', '10.0.2.2');
+        }
+        await audioService.connect(url, _livekitToken!);
       } catch (e) {
         _error = 'Audio connection failed';
         notifyListeners();
@@ -222,8 +274,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Called by the UI retry button when the audio error banner is shown.
+  Future<void> reconnectAudio() async {
+    await _connectAudio();
+    notifyListeners();
+  }
+
   Future<bool> requestPermissions() async {
-    return await locationService.requestPermissions();
+    final locationGranted = await locationService.requestPermissions();
+    final micStatus = await Permission.microphone.request();
+    return locationGranted && micStatus.isGranted;
   }
 
   void startLocation() {
@@ -301,6 +361,116 @@ class AppState extends ChangeNotifier {
     if (_videoEnabled) { socketService.startVideo(); audioService.startVideo(); }
     else { socketService.stopVideo(); audioService.stopVideo(); }
     notifyListeners();
+  }
+
+  // Push Notifications Setup
+  Future<void> initPushNotifications() async {
+    if (kIsWeb) return;
+    try {
+      await Firebase.initializeApp();
+      final messaging = FirebaseMessaging.instance;
+      
+      final settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        final token = await messaging.getToken();
+        if (token != null) {
+          debugPrint('[Push] Device Token registered: $token');
+          await apiService.registerDeviceToken(token);
+        }
+      }
+    } catch (e) {
+      debugPrint('[Push] Firebase failed to initialize (expected in local dev / without credentials): $e');
+    }
+  }
+
+  // Social Methods
+  Future<void> loadFriends() async {
+    _isLoadingFriends = true;
+    notifyListeners();
+    try {
+      _friends = await apiService.getFriends();
+    } catch (e) {
+      debugPrint('Failed to load friends: $e');
+    } finally {
+      _isLoadingFriends = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadPendingInvites() async {
+    _isLoadingInvites = true;
+    notifyListeners();
+    try {
+      _pendingInvites = await apiService.getPendingInvites();
+    } catch (e) {
+      debugPrint('Failed to load invites: $e');
+    } finally {
+      _isLoadingInvites = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> followUser(String targetUserId) async {
+    try {
+      await apiService.followUser(targetUserId);
+      await loadFriends();
+    } catch (e) {
+      _error = 'Failed to follow user';
+      notifyListeners();
+    }
+  }
+
+  Future<void> unfollowUser(String targetUserId) async {
+    try {
+      await apiService.unfollowUser(targetUserId);
+      await loadFriends();
+    } catch (e) {
+      _error = 'Failed to unfollow user';
+      notifyListeners();
+    }
+  }
+
+  Future<List<dynamic>> searchUsers(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      return await apiService.searchUsers(query);
+    } catch (e) {
+      debugPrint('Search failed: $e');
+      return [];
+    }
+  }
+
+  Future<void> sendConvoyInvite(String targetUserId) async {
+    if (_convoyId == null) return;
+    try {
+      await apiService.sendConvoyInvite(_convoyId!, targetUserId);
+    } catch (e) {
+      _error = 'Failed to send invite';
+      notifyListeners();
+    }
+  }
+
+  Future<void> respondToInvite(String inviteId, String status) async {
+    try {
+      await apiService.respondToInvite(inviteId, status);
+      final inviteIndex = _pendingInvites.indexWhere((x) => x['id'] == inviteId);
+      if (inviteIndex != -1) {
+        final invite = _pendingInvites[inviteIndex];
+        _pendingInvites.removeAt(inviteIndex);
+        if (status == 'accepted') {
+          joinConvoy(invite['convoyId']);
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to respond to invitation';
+      notifyListeners();
+    }
   }
 
   void clearError() {

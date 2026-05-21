@@ -5,6 +5,11 @@ WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci
 
+# Copy the Prisma schema and config to generate client
+COPY server/prisma/ ./prisma/
+COPY server/prisma.config.ts ./
+RUN npx prisma generate
+
 COPY server/tsconfig.json ./
 COPY server/src/ ./src/
 
@@ -15,7 +20,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY server/package*.json ./
-RUN npm ci --only=production
+# Production dependencies need the prisma client generation too
+COPY server/prisma/ ./prisma/
+COPY server/prisma.config.ts ./
+RUN npm ci --only=production && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
 

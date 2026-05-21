@@ -11,6 +11,7 @@ class SocketService {
   final _audioTokenController = StreamController<Map<String, dynamic>>.broadcast();
   final _errorController = StreamController<String>.broadcast();
   final _videoController = StreamController<Map<String, dynamic>>.broadcast();
+  final _inviteController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
@@ -19,6 +20,7 @@ class SocketService {
   Stream<Map<String, dynamic>> get audioTokenStream => _audioTokenController.stream;
   Stream<String> get errorStream => _errorController.stream;
   Stream<Map<String, dynamic>> get videoStream => _videoController.stream;
+  Stream<Map<String, dynamic>> get inviteStream => _inviteController.stream;
 
   bool get connected => _socket?.connected ?? false;
 
@@ -100,6 +102,14 @@ class SocketService {
 
     _socket!.on('video:participant-stopped', (data) {
       _videoController.add({'type': 'stopped', 'userId': data['userId']});
+    });
+
+    _socket!.on('invite:received', (data) {
+      _inviteController.add({'type': 'received', ...data});
+    });
+
+    _socket!.on('invite:responded', (data) {
+      _inviteController.add({'type': 'responded', ...data});
     });
   }
 

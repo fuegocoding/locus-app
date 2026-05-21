@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../screens/invite_friends_sheet.dart';
 
 class ConvoyPanel extends StatelessWidget {
   const ConvoyPanel({super.key});
@@ -70,6 +71,11 @@ class ConvoyPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.person_add, color: Color(0xFF6C63FF)),
+                  tooltip: 'Invite Friends',
+                  onPressed: () => InviteFriendsSheet.show(context),
+                ),
                 IconButton(icon: const Icon(Icons.qr_code), onPressed: () => _showQR(context, convoy.inviteCode, inviteUrl)),
                 IconButton(
                   icon: const Icon(Icons.share),

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { generateAuthToken, generateUserId } from '../services/auth';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { getRedis } from '../services/redis';
+import { prisma } from '../services/db';
 
 const router = Router();
 
@@ -16,15 +17,28 @@ function getTwilioClient() {
   return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
+function normalizePhoneNumber(phone: string): string {
+  let cleaned = phone.trim().replace(/(?!^\+)\D/g, '');
+  if (!cleaned.startsWith('+')) {
+    if (cleaned.length === 10) {
+      cleaned = '+1' + cleaned;
+    } else {
+      cleaned = '+' + cleaned;
+    }
+  }
+  return cleaned;
+}
+
 // Send verification code via Twilio
 router.post('/verify/send', async (req: Request, res: Response): Promise<void> => {
   let phone = '';
   try {
-    phone = (req.body.phone || '').trim();
-    if (!phone) {
+    const rawPhone = (req.body.phone || '').trim();
+    if (!rawPhone) {
       res.status(400).json({ error: 'Phone number required' });
       return;
     }
+    phone = normalizePhoneNumber(rawPhone);
 
     if (!isProd) {
       // Development mode: accept any phone, use fixed code
@@ -66,12 +80,13 @@ router.post('/verify/send', async (req: Request, res: Response): Promise<void> =
 // Verify code and return auth token
 router.post('/verify/check', async (req: Request, res: Response): Promise<void> => {
   try {
-    const phone = (req.body.phone || '').trim();
+    const rawPhone = (req.body.phone || '').trim();
     const code = (req.body.code || '').trim();
-    if (!phone || !code) {
+    if (!rawPhone || !code) {
       res.status(400).json({ error: 'Phone and code required' });
       return;
     }
+    const phone = normalizePhoneNumber(rawPhone);
 
     // First check Redis (handles dev mode and Twilio fallback)
     const redisCheck = getRedis();
@@ -107,25 +122,25 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
     }
 
     // Check if user exists, otherwise create
-    const redis = getRedis();
-    let userId = await redis.get(`phone:${phone}`);
-    const isNewUser = !userId;
+    let user = await prisma.user.findUnique({
+      where: { phone }
+    });
+    const isNewUser = !user;
 
-    if (!userId) {
-      userId = generateUserId();
-      await redis.set(`phone:${phone}`, userId);
-      await redis.hset('locus:users', userId, JSON.stringify({
-        id: userId,
-        phone,
-        displayName: `User_${userId.slice(0, 6)}`,
-        privacyMode: 'open',
-        points: 0,
-        premium: false,
-        pins: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
+    if (!user) {
+      const generatedId = generateUserId();
+      user = await prisma.user.create({
+        data: {
+          id: generatedId,
+          phone,
+          displayName: `User_${generatedId.slice(0, 6)}`,
+          privacyMode: 'open',
+          points: 0,
+          premium: false,
+        }
+      });
     }
+    const userId = user.id;
 
     const token = generateAuthToken(userId!, phone);
     res.json({
@@ -142,13 +157,20 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
 // Get current user profile
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const r = getRedis();
-    const userData = await r.hget('locus:users', req.userId!);
-    if (!userData) {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId! },
+      include: {
+        pins: true,
+      }
+    });
+    if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    res.json(JSON.parse(userData));
+    res.json({
+      ...user,
+      pins: user.pins.map(p => p.targetUserId),
+    });
   } catch (error: any) {
     console.error('[Auth] Get profile error:', error);
     res.status(500).json({ error: 'Failed to get profile' });
@@ -158,14 +180,16 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
 // Update display name
 router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const r = getRedis();
-    const userData = await r.hget('locus:users', req.userId!);
-    if (!userData) {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId! },
+      include: { pins: true }
+    });
+    if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    const user = JSON.parse(userData);
+    const dataToUpdate: any = {};
 
     if (req.body.displayName) {
       const newName = req.body.displayName.trim();
@@ -178,28 +202,38 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
         res.status(400).json({ error: 'Display name can only contain letters, numbers, and underscores' });
         return;
       }
-      const existingId = await r.get(`locus:username:${newName.toLowerCase()}`);
-      if (existingId && existingId !== req.userId!) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          displayName: {
+            equals: newName,
+            mode: 'insensitive'
+          }
+        }
+      });
+      if (existingUser && existingUser.id !== req.userId!) {
         res.status(409).json({ error: 'Username already taken' });
         return;
       }
-      if (user.displayName) {
-        await r.del(`locus:username:${user.displayName.toLowerCase()}`);
-      }
-      await r.set(`locus:username:${newName.toLowerCase()}`, req.userId!);
-      user.displayName = newName;
+      dataToUpdate.displayName = newName;
     }
 
     const allowedFields = ['avatar', 'vehicleTag', 'privacyMode'];
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        user[field] = req.body[field];
+        dataToUpdate[field] = req.body[field];
       }
     }
-    user.updatedAt = new Date().toISOString();
 
-    await r.hset('locus:users', req.userId!, JSON.stringify(user));
-    res.json(user);
+    const updatedUser = await prisma.user.update({
+      where: { id: req.userId! },
+      data: dataToUpdate,
+      include: { pins: true }
+    });
+
+    res.json({
+      ...updatedUser,
+      pins: updatedUser.pins.map(p => p.targetUserId),
+    });
   } catch (error: any) {
     console.error('[Auth] Update profile error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -218,8 +252,14 @@ router.post('/check-username', async (req: Request, res: Response): Promise<void
       res.json({ available: false, reason: 'Username can only contain letters, numbers, and underscores' });
       return;
     }
-    const r = getRedis();
-    const existing = await r.get(`locus:username:${username.trim().toLowerCase()}`);
+    const existing = await prisma.user.findFirst({
+      where: {
+        displayName: {
+          equals: username.trim(),
+          mode: 'insensitive'
+        }
+      }
+    });
     res.json({ available: !existing });
   } catch (error: any) {
     console.error('[Auth] Check username error:', error);
@@ -230,19 +270,17 @@ router.post('/check-username', async (req: Request, res: Response): Promise<void
 // Get convoy by invite code
 router.get('/convoy/:inviteCode', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const r = getRedis();
-    const convoyIds = await r.hkeys('locus:convoys');
-    for (const id of convoyIds) {
-      const convoyData = await r.hget('locus:convoys', id);
-      if (convoyData) {
-        const convoy = JSON.parse(convoyData);
-        if (convoy.inviteCode === req.params.inviteCode) {
-          res.json({ id: convoy.id, name: convoy.name, memberCount: convoy.members.length });
-          return;
-        }
+    const convoy = await prisma.convoy.findUnique({
+      where: { inviteCode: req.params.inviteCode },
+      include: {
+        memberships: true
       }
+    });
+    if (!convoy) {
+      res.status(404).json({ error: 'Convoy not found' });
+      return;
     }
-    res.status(404).json({ error: 'Convoy not found' });
+    res.json({ id: convoy.id, name: convoy.name, memberCount: convoy.memberships.length });
   } catch (error: any) {
     console.error('[Auth] Get convoy error:', error);
     res.status(500).json({ error: 'Failed to get convoy' });

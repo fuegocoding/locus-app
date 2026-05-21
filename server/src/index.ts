@@ -10,6 +10,7 @@ import fs from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth';
+import socialRoutes from './routes/social';
 import { setupSocketHandlers, addConnectedUser } from './socket';
 import { verifyAuthToken } from './services/auth';
 import { cleanupStaleRooms } from './services/proximity';
@@ -88,6 +89,9 @@ app.get('/health', async (_req, res) => {
 // Auth routes
 app.use('/api/auth', authRoutes);
 
+// Social routes
+app.use('/api/social', socialRoutes);
+
 // Serve Flutter web build (must be AFTER API routes)
 const webDir = path.resolve(__dirname, '../../app/build/web');
 if (fs.existsSync(webDir)) {
@@ -112,6 +116,8 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   transports: ['websocket', 'polling'],
   allowEIO3: true,
 });
+
+app.set('io', io);
 
 // Socket.io auth middleware
 io.use((socket, next) => {

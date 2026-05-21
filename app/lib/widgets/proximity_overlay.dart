@@ -5,7 +5,11 @@ import 'package:share_plus/share_plus.dart';
 import '../providers/app_state.dart';
 
 class ProximityOverlay extends StatelessWidget {
-  const ProximityOverlay({super.key});
+  /// Distance from the top of the screen to place the card.
+  /// Caller accounts for status-bar + top-bar + any active banners.
+  final double topOffset;
+
+  const ProximityOverlay({super.key, required this.topOffset});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +18,7 @@ class ProximityOverlay extends StatelessWidget {
 
     if (state.nearbyUsers.isEmpty) {
       return Positioned(
-        top: MediaQuery.of(context).padding.top + 80,
+        top: topOffset,
         left: 16,
         right: 16,
         child: Container(

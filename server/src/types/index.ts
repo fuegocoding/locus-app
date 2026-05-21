@@ -132,10 +132,24 @@ export interface ServerToClientEvents {
   'convoy:member-joined': (data: PresenceUpdate) => void;
   'convoy:member-left': (data: { userId: string }) => void;
   'convoy:left': (data: { convoyId: string }) => void;
-  'audio:token': (data: { room: string; token: string; identity: string }) => void;
+  'audio:token': (data: { room: string; token: string; serverUrl?: string; identity: string }) => void;
   'audio:speaking': (data: { userId: string; speaking: boolean }) => void;
   'audio:volume-update': (data: { userId: string; volume: number }) => void;
   'error': (data: { message: string; code: string }) => void;
   'video:participant-started': (data: { userId: string }) => void;
   'video:participant-stopped': (data: { userId: string }) => void;
+  'invite:received': (data: {
+    id: string;
+    convoyId: string;
+    convoyName: string;
+    senderId: string;
+    senderName: string;
+  }) => void;
+  'invite:responded': (data: {
+    id: string;
+    status: 'accepted' | 'declined';
+    receiverId: string;
+    receiverName: string;
+  }) => void;
 }
+

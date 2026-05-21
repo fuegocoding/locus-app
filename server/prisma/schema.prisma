@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String             @id
+  phone            String             @unique
+  displayName      String             @unique
+  privacyMode      String             @default("open")
+  points           Int                @default(0)
+  premium          Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  
+  // Relations
+  pins             Pin[]              @relation("UserPins")
+  pinnedBy         Pin[]              @relation("UserPinnedBy")
+  blocks           Block[]            @relation("UserBlocks")
+  blockedBy        Block[]            @relation("UserBlockedBy")
+  createdConvoys   Convoy[]           @relation("ConvoyCreator")
+  convoyMemberships ConvoyMembership[]
+  taskCompletions  TaskCompletion[]
+
+  // Social Relations
+  following        Follow[]           @relation("UserFollowing")
+  followers        Follow[]           @relation("UserFollowers")
+  deviceTokens     DeviceToken[]
+  sentInvites      ConvoyInvite[]     @relation("SentInvites")
+  receivedInvites  ConvoyInvite[]     @relation("ReceivedInvites")
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Pin {
+  userId       String
+  targetUserId String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation("UserPins", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser   User     @relation("UserPinnedBy", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetUserId])
+}
+
+model Block {
+  userId       String
+  targetUserId String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation("UserBlocks", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser   User     @relation("UserBlockedBy", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetUserId])
+}
+
+model Convoy {
+  id           String             @id
+  name         String
+  creatorId    String
+  accessLevel  String             @default("public") // "public" or "private"
+  inviteCode   String             @unique
+  livekitRoom  String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  creator      User               @relation("ConvoyCreator", fields: [creatorId], references: [id])
+  memberships  ConvoyMembership[]
+  invites      ConvoyInvite[]
+}
+
+model ConvoyMembership {
+  convoyId   String
+  userId     String
+  joinedAt   DateTime @default(now())
+
+  convoy     Convoy   @relation(fields: [convoyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([convoyId, userId])
+}
+
+model ConvoyInvite {
+  id         String   @id @default(uuid())
+  convoyId   String
+  senderId   String
+  receiverId String
+  status     String   @default("pending") // "pending", "accepted", "declined"
+  createdAt  DateTime @default(now())
+
+  convoy     Convoy   @relation(fields: [convoyId], references: [id], onDelete: Cascade)
+  sender     User     @relation("SentInvites", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedInvites", fields: [receiverId], references: [id], onDelete: Cascade)
+}
+
+model TaskCompletion {
+  id           String   @id @default(uuid())
+  userId       String
+  taskType     String // e.g. "REFERRAL", "AD", "PROFILE"
+  pointsEarned Int
+  completedAt  DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:livekit_client/livekit_client.dart';
 
 class AudioService {
   Room? _room;
+  EventsListener<RoomEvent>? _roomListener;
   bool _isConnected = false;
   bool _isMuted = false;
   bool _pushToTalk = false;
@@ -35,22 +37,22 @@ class AudioService {
     _reconnectAttempts = 0;
 
     try {
-      final room = Room();
-
-      await room.connect(
-        url,
-        token,
+      final room = Room(
         roomOptions: const RoomOptions(
           adaptiveStream: false,
           dynacast: false,
           defaultAudioPublishOptions: AudioPublishOptions(
             name: 'microphone',
-            maxBitrate: 64000,
             dtx: true,
-            opusDtx: true,
             red: false,
+            audioBitrate: 64000,
           ),
         ),
+      );
+
+      await room.connect(
+        url,
+        token,
       );
 
       _room = room;
@@ -65,17 +67,17 @@ class AudioService {
         }
       });
 
-      room.onTrackSubscribed = (track, publication, participant) {
-        if (track.kind == TrackType.AUDIO) {
-          _applyVolume(publication.participant.identity, _volumes[publication.participant.identity] ?? 1.0);
-        }
-      };
-
-      room.onTrackStreamStateChanged = (trackPublication, participant) {
-        if (trackPublication.kind == TrackType.AUDIO) {
-          _speakingController.add(participant.identity);
-        }
-      };
+      _roomListener = room.createListener()
+        ..on<TrackSubscribedEvent>((event) {
+          if (event.track.kind == TrackType.AUDIO) {
+            _applyVolume(event.participant.identity, _volumes[event.participant.identity] ?? 1.0);
+          }
+        })
+        ..on<TrackStreamStateUpdatedEvent>((event) {
+          if (event.publication.kind == TrackType.AUDIO) {
+            _speakingController.add(event.participant.identity);
+          }
+        });
 
       print('[Audio] Connected to room');
     } catch (e) {
@@ -155,8 +157,9 @@ class AudioService {
     for (final participant in _room!.remoteParticipants.values) {
       if (participant.identity == participantIdentity) {
         for (final publication in participant.trackPublications.values) {
-          if (publication.track != null && publication.kind == TrackType.AUDIO) {
-            publication.track!.setVolume(clampedVolume);
+          final track = publication.track;
+          if (track != null && publication.kind == TrackType.AUDIO) {
+            rtc.Helper.setVolume(clampedVolume, track.mediaStreamTrack);
           }
         }
       }
@@ -187,6 +190,9 @@ class AudioService {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _reconnectAttempts = 0;
+
+    _roomListener?.dispose();
+    _roomListener = null;
 
     if (_room != null) {
       try {
