@@ -59,7 +59,6 @@ const authLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
 });
 
 const generalLimiter = rateLimit({
@@ -68,7 +67,6 @@ const generalLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
 });
 
 app.use('/api/auth/verify/', authLimiter);
