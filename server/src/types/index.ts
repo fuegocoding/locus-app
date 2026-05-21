@@ -151,5 +151,17 @@ export interface ServerToClientEvents {
     receiverId: string;
     receiverName: string;
   }) => void;
+  'account:deleted': () => void;
+  'friends:location': (data: {
+    userId: string;
+    displayName: string;
+    latitude: number;
+    longitude: number;
+    heading: number;
+  }) => void;
+  'user:pinned-you': (data: {
+    pinnedByUserId: string;
+    pinnedByDisplayName: string;
+  }) => void;
 }
 

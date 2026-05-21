@@ -7,15 +7,23 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: const Color(0xFF0d1117),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.my_location, size: 72, color: theme.colorScheme.primary),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                width: 100,
+                height: 100,
+              ),
+            ),
             const SizedBox(height: 16),
             Text('Locus', style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
+              color: const Color(0xFFC4B5FD),
             )),
             const SizedBox(height: 24),
             SizedBox(
@@ -23,7 +31,7 @@ class SplashScreen extends StatelessWidget {
               height: 32,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                color: theme.colorScheme.primary,
+                color: const Color(0xFFC4B5FD),
               ),
             ),
           ],

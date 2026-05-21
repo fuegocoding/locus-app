@@ -27,7 +27,7 @@ class ConvoyPanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -93,18 +93,18 @@ class ConvoyPanel extends StatelessWidget {
                 icon: Icon(
                   state.videoEnabled ? Icons.videocam_off : Icons.videocam,
                   size: 18,
-                  color: state.videoEnabled ? Colors.red[300] : Colors.blue[300],
+                  color: state.videoEnabled ? Colors.red[300] : const Color(0xFFC4B5FD),
                 ),
                 label: Text(
                   state.videoEnabled ? 'Stop Video' : 'Start Video',
                   style: TextStyle(
-                    color: state.videoEnabled ? Colors.red[300] : Colors.blue[300],
+                    color: state.videoEnabled ? Colors.red[300] : const Color(0xFFC4B5FD),
                     fontSize: 13,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: (state.videoEnabled ? Colors.red : Colors.blue).withOpacity(0.4),
+                    color: (state.videoEnabled ? Colors.red : const Color(0xFF6C63FF)).withOpacity(0.4),
                   ),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(vertical: 10),

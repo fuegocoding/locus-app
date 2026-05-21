@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<MapWidgetState> _mapKey = GlobalKey();
   bool _isHolding = false;
   bool _swipedToLock = false;
   double _dragY = 0;
@@ -24,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Bar metrics — keep in one place so mic/speedo track automatically
   static const double _barHeight = 52.0;
-  static const double _barBottomPadding = 12.0; // gap from screen edge
+  static const double _barBottomPadding = 6.0; // gap from screen edge
   static const double _floatGap = 10.0;          // gap between bar top and floating widgets
 
   @override
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const MapWidget(),
+          MapWidget(key: _mapKey),
 
           // ── Top bar ─────────────────────────────────────────────────────
           Positioned(
@@ -70,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // ── Banners ──────────────────────────────────────────────────────
           if (!state.isOnline) _buildOfflineBanner(theme),
           if (showAudioError) _buildAudioErrorBanner(state, theme),
+          if (state.pinnedByMessage != null) _buildPinnedBanner(state, theme),
 
           // ── Mode overlays ────────────────────────────────────────────────
           if (state.mode == 'proximity')
@@ -100,6 +102,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // ── Relocate button — just above speedometer ──────────────────────
+          if (_mapKey.currentState != null &&
+              !_mapKey.currentState!.followingUser &&
+              state.latitude != 0)
+            Positioned(
+              bottom: _floatBottom(bottomSafe) + 80,
+              right: 16,
+              child: Material(
+                color: const Color(0xFF1A1A3E).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(28),
+                elevation: 4,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () => _mapKey.currentState?.recenterOnUser(state),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3)),
+                    ),
+                    child: const Icon(Icons.my_location, color: Color(0xFFC4B5FD), size: 22),
+                  ),
+                ),
+              ),
+            ),
+
           // ── Bottom nav bar ───────────────────────────────────────────────
           _buildBottomBar(state, theme, bottomSafe),
 
@@ -128,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: state.mode == 'proximity' ? Colors.green : Colors.blue,
+              color: state.mode == 'proximity' ? Colors.green : const Color(0xFFC4B5FD),
             ),
           ),
           const SizedBox(width: 6),
@@ -146,16 +175,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.2),
+                        color: const Color(0xFFC4B5FD).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.swap_horiz, size: 12, color: Colors.blue[300]),
+                          Icon(Icons.swap_horiz, size: 12, color: const Color(0xFFC4B5FD)),
                           const SizedBox(width: 2),
                           Text('Live',
-                              style: TextStyle(fontSize: 10, color: Colors.blue[300], fontWeight: FontWeight.bold)),
+                              style: TextStyle(fontSize: 10, color: const Color(0xFFC4B5FD), fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -188,11 +217,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _topIcon(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Icon(icon, size: 18, color: Colors.white54),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Icon(icon, size: 18, color: Colors.white54),
+        ),
       ),
     );
   }
@@ -209,9 +242,9 @@ class _HomeScreenState extends State<HomeScreen> {
         height: _barHeight,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E).withOpacity(0.92),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+          color: const Color(0xFF1A1A3E).withOpacity(0.72),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.18), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.4),
@@ -256,47 +289,51 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _barBtn(IconData icon, String label, VoidCallback onTap,
       {bool highlight = false, int? badge}) {
     final color = highlight ? const Color(0xFFC4B5FD) : Colors.white60;
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 72,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(icon, size: 20, color: color),
-                if (badge != null && badge > 0)
-                  Positioned(
-                    top: -4,
-                    right: -6,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF6C63FF),
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                      child: Text(
-                        '$badge',
-                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: SizedBox(
+          width: 72,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 20, color: color),
+                  if (badge != null && badge > 0)
+                    Positioned(
+                      top: -4,
+                      right: -6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF6C63FF),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Text(
+                          '$badge',
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9.5,
-                color: color,
-                fontWeight: highlight ? FontWeight.bold : FontWeight.w500,
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  color: color,
+                  fontWeight: highlight ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -349,16 +386,70 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 8),
             Expanded(child: Text(label,
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-            GestureDetector(
-              onTap: () => state.reconnectAudio(),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => state.reconnectAudio(),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('Retry',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
-                child: const Text('Retry',
-                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPinnedBanner(AppState state, ThemeData theme) {
+    double topOffset = MediaQuery.of(context).padding.top + 54;
+    if (!state.isOnline) topOffset += 36;
+    if (state.isAuthenticated && !state.isAudioConnected &&
+        (state.mode == 'convoy' || state.nearbyUsers.isNotEmpty)) topOffset += 44;
+    return Positioned(
+      top: topOffset,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6C63FF).withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFC4B5FD).withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.push_pin, size: 16, color: Color(0xFFC4B5FD)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(state.pinnedByMessage!,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('Pin back',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+                onTap: () {
+                  // TODO: Pin back — need the userId from the pinnedByMessage
+                  // Currently this just dismisses the banner
+                  setState(() {});
+                },
               ),
             ),
           ],
@@ -633,14 +724,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Friends sheet ─────────────────────────────────────────────────────────
 
   void _showFriendsSheet(BuildContext context, AppState state) {
-    // Refresh before opening
     state.loadFriends();
     state.loadPendingInvites();
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: false,
+      isScrollControlled: true,
       builder: (_) => ChangeNotifierProvider.value(
         value: state,
         child: const _FriendsSheet(),
@@ -776,147 +866,157 @@ class _FriendsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final screenHeight = MediaQuery.of(context).size.height;
 
     final friends = state.friends;
     final invites = state.pendingInvites;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF161B22),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SafeArea(
+    return DraggableScrollableSheet(
+      initialChildSize: friends.isEmpty && invites.isEmpty ? 0.35 : 0.45,
+      minChildSize: 0.25,
+      maxChildSize: 0.85,
+      builder: (ctx, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF161B22),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 6),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+
+                // Header row
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 8, 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.people_rounded, color: Color(0xFFC4B5FD), size: 20),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Friends',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SocialTabScreen(autoFocus: true)));
+                        },
+                        icon: const Icon(Icons.search, size: 15, color: Color(0xFF6C63FF)),
+                        label: const Text('Find People',
+                            style: TextStyle(color: Color(0xFF6C63FF), fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Expanded(
+                  child: _friendsSheetContent(context, state, friends, invites, scrollController),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _friendsSheetContent(BuildContext context, AppState state, List<dynamic> friends, List<dynamic> invites,
+      ScrollController scrollController) {
+    if (state.isLoadingFriends && friends.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
+        ),
+      );
+    }
+
+    if (friends.isEmpty && invites.isEmpty) {
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 6),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+            const Icon(Icons.people_outline, size: 48, color: Colors.white12),
+            const SizedBox(height: 12),
+            const Text('No friends yet',
+                style: TextStyle(color: Colors.white38, fontSize: 14)),
+            const SizedBox(height: 4),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Follow other drivers to become mutual friends,\nthen invite them to convoys.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white24, fontSize: 12),
               ),
             ),
-
-            // Header row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 8, 10),
-              child: Row(
-                children: [
-                  const Icon(Icons.people_rounded, color: Color(0xFFC4B5FD), size: 20),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Friends',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                      ),
-                    ),
-                  ),
-                  // "Find People" shortcut
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SocialTabScreen()));
-                    },
-                    icon: const Icon(Icons.search, size: 15, color: Color(0xFF6C63FF)),
-                    label: const Text('Find',
-                        style: TextStyle(color: Color(0xFF6C63FF), fontSize: 12)),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SocialTabScreen(autoFocus: true)));
+              },
+              icon: const Icon(Icons.search, size: 15),
+              label: const Text('Find People'),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF6C63FF)),
+                foregroundColor: const Color(0xFF6C63FF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
-
-            // Loading
-            if (state.isLoadingFriends && friends.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
-              )
-
-            // Empty state
-            else if (friends.isEmpty && invites.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Column(
-                  children: [
-                    const Icon(Icons.people_outline, size: 48, color: Colors.white12),
-                    const SizedBox(height: 12),
-                    const Text('No friends yet',
-                        style: TextStyle(color: Colors.white38, fontSize: 14)),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Follow other drivers to become mutual friends,\nthen invite them to convoys.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white24, fontSize: 12),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SocialTabScreen()));
-                      },
-                      icon: const Icon(Icons.search, size: 15),
-                      label: const Text('Find People'),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF6C63FF)),
-                        foregroundColor: const Color(0xFF6C63FF),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-
-            // List — fixed height so it doesn't expand the sheet
-            else
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.45,
-                ),
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                  children: [
-                    // Convoy invites section
-                    if (invites.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                        child: Text('Convoy Invites (${invites.length})',
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                      ...invites.map((inv) => _InviteCard(invite: inv, state: state)),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Friends section
-                    if (friends.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                        child: Text('Friends (${friends.length})',
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                      ...friends.map((f) => _FriendRow(friend: f, state: state)),
-                    ],
-                  ],
-                ),
-              ),
           ],
         ),
-      ),
+      );
+    }
+
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+      children: [
+        if (invites.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text('Convoy Invites (${invites.length})',
+                style: const TextStyle(
+                    color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          ...invites.map((inv) => _InviteCard(invite: inv, state: state)),
+          const SizedBox(height: 12),
+        ],
+        if (friends.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text('Friends (${friends.length})',
+                style: const TextStyle(
+                    color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          ...friends.map((f) => _FriendRow(friend: f, state: state)),
+        ],
+      ],
     );
   }
 }
@@ -1058,16 +1158,20 @@ class _SheetIconBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
         ),
-        child: Icon(icon, color: color, size: 16),
       ),
     );
   }

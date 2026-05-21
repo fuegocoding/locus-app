@@ -27,9 +27,6 @@ RUN npm ci --only=production && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
 
-# Copy Flutter web build
-COPY app/build/web /app/build/web
-
 EXPOSE 3001
 
-CMD ["node", "dist/index.js"]
+CMD npx prisma db push --accept-data-loss && node dist/index.js

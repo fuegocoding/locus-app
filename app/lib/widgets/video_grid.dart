@@ -34,7 +34,7 @@ class VideoGrid extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withOpacity(0.95),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFFC4B5FD).withOpacity(0.3)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(15),
@@ -116,7 +116,7 @@ class _VideoTile extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.7),
+                  color: const Color(0xFFC4B5FD).withOpacity(0.7),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),

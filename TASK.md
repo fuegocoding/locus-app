@@ -6,9 +6,9 @@
   - [x] `geolocator` for GPS
   - [x] `permission_handler` for mic/location permissions
   - [x] `flutter_background_service` for background tracking
-- [ ] Build toolchains
+- [ ] Build toolchains (user action needed)
   - [ ] macOS + Xcode for iOS
-  - [ ] Android SDK + Java/Kotlin toolchain for Android
+  - [x] Android SDK + Kotlin toolchain (verified working)
 - [x] Real services
   - [x] Phone verification (Twilio Verify)
   - [x] Production Redis (Railway Redis)
@@ -16,26 +16,29 @@
   - [x] HTTPS backend with Railway domain + SSL
 
 ## 🌐 Web App - DEPLOYED
-- [x] Flutter web build served at https://locus-production-99b7.up.railway.app
+- [x] Marketing landing page at `locus-production-99b7.up.railway.app/` with hero, features, CTA
+- [x] Privacy policy at `/privacy`, Terms of Service at `/terms`
+- [x] Flutter web build served at `/app`
+- [x] Server health check at `/health`
 - [x] Next.js frontend (requires Railway dashboard config: Root Directory = `frontend`)
-- [x] Server health check: https://locus-production-99b7.up.railway.app/health
 
 ## 📱 App Store Requirements
 - [ ] **Apple Developer account** ($99/yr)
 - [ ] **Google Play Console** ($25 one-time)
-- [ ] App icons (1024x1024), launch screens, screenshots for all device sizes
-- [ ] Privacy policy URL, terms of service, support URL
+- [x] App icons (generated from SVG — Android adaptive + iOS all sizes)
+- [x] Privacy policy URL, terms of service, support URL (`/privacy`, `/terms`)
 - [ ] App Store description, keywords, promotional text
 - [ ] Content rating questionnaire, data safety form (Google)
 - [ ] TestFlight beta testing (iOS) / Internal testing track (Android)
 
 ## 🛡️ Compliance & Legal
-- [ ] GDPR/CCPA privacy policy (data collection, retention, deletion)
+- [x] GDPR/CCPA privacy policy (hosted at `/privacy`)
+- [x] Terms of Service (hosted at `/terms`)
 - [ ] COPPA compliance if under-13 users possible
 - [ ] Age rating justification
 - [ ] Data safety disclosures (location, microphone, contacts)
 - [ ] In-app purchase setup if premium features exist
-- [ ] Account deletion flow (required by Apple)
+- [x] Account deletion flow (required by Apple)
 
 ##  Testing
 - [ ] Real device testing (iPhone + Android, multiple OS versions)
@@ -79,11 +82,12 @@
 - [x] Applied purple theme to convoy panel, video grid, home screen mode indicator and Live badge
 
 ## 🧹 Backlog
-- [ ] Onboarding validation errors (phone, username) should only appear after the user clicks Continue, not while typing. Prevent submission instead of interrupting with live errors.
-- [ ] See friends on map with distinct markers
-- [ ] Reciprocal pin notification (popup to pin back or remove)
-- [ ] Relocate button — recenter map on user's location when they've panned away
-- [ ] Build a marketing landing page (replace the current minimal one)
+- [x] Onboarding validation errors (phone, username) should only appear after the user clicks Continue, not while typing. Prevent submission instead of interrupting with live errors.
+- [x] See friends on map with distinct green markers
+- [x] Reciprocal pin notification (banner when someone pins you, with Pin back button)
+- [x] Relocate button — recenter map on user's location when they've panned away
+- [x] Build a marketing landing page at `/` with hero, features grid, CTA links
+- [ ] Implement link sharing and referral flow (earn points for invites)
 - [ ] QR code friends — scan personal QR to add friends
   - [ ] Personal QR code on profile/settings (others scan to add you)
   - [ ] QR code reader in Find People screen (share + scan buttons below search bar)

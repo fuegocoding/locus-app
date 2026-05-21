@@ -3,6 +3,7 @@ import { generateAuthToken, generateUserId } from '../services/auth';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { getRedis } from '../services/redis';
 import { prisma } from '../services/db';
+import { getSocketIdByUserId } from '../socket';
 
 const router = Router();
 
@@ -284,6 +285,38 @@ router.get('/convoy/:inviteCode', authMiddleware, async (req: AuthRequest, res: 
   } catch (error: any) {
     console.error('[Auth] Get convoy error:', error);
     res.status(500).json({ error: 'Failed to get convoy' });
+  }
+});
+
+// Delete user account
+router.delete('/account', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId!;
+
+    // Delete convoys the user created (no cascade on Convoy.creatorId)
+    await prisma.convoy.deleteMany({ where: { creatorId: userId } });
+
+    // Delete user — cascade handles Follow, DeviceToken, Pin, Block,
+    // ConvoyMembership, ConvoyInvite, TaskCompletion
+    await prisma.user.delete({ where: { id: userId } });
+
+    // Remove Redis presence data
+    const r = getRedis();
+    await r.del(`presence:${userId}`);
+
+    // Force-disconnect any live socket
+    const io = req.app.get('io') as any;
+    const socketId = getSocketIdByUserId(userId);
+    if (socketId) {
+      io.to(socketId).emit('account:deleted');
+      const sock = io.sockets.sockets.get(socketId);
+      if (sock) sock.disconnect(true);
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Auth] Delete account error:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 

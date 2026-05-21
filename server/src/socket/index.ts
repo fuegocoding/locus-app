@@ -67,6 +67,35 @@ export function setupSocketHandlers(io: TypedServer): void {
       } else if (user.mode === 'convoy' && user.convoyId) {
         await handleConvoyPresenceBroadcast(socket, user, io);
       }
+
+      // Broadcast location to online mutual friends
+      try {
+        const friendRecords = await prisma.$queryRaw<Array<{ id: string }>>`
+          SELECT u.id FROM "User" u
+          WHERE EXISTS (
+            SELECT 1 FROM "Follow" f1
+            WHERE f1."followerId" = ${user.userId} AND f1."followingId" = u.id
+          )
+          AND EXISTS (
+            SELECT 1 FROM "Follow" f2
+            WHERE f2."followerId" = u.id AND f2."followingId" = ${user.userId}
+          )
+        `;
+        const friendIds = new Set(friendRecords.map(f => f.id));
+        for (const [sid, cu] of connectedUsers) {
+          if (friendIds.has(cu.userId)) {
+            io.to(sid).emit('friends:location', {
+              userId: user.userId,
+              displayName: `User_${user.userId.slice(0, 6)}`,
+              latitude: user.latitude,
+              longitude: user.longitude,
+              heading: user.heading,
+            });
+          }
+        }
+      } catch (err) {
+        // Friend presence broadcast error — non-critical
+      }
     });
 
     socket.on('mode:switch', async (data) => {
@@ -243,6 +272,17 @@ export function setupSocketHandlers(io: TypedServer): void {
       }
 
       await redis.addPin(user.userId, data.targetUserId);
+
+      // Notify the target user they were pinned
+      const targetSocketEntry = [...connectedUsers.entries()]
+        .find(([, cu]) => cu.userId === data.targetUserId);
+      if (targetSocketEntry) {
+        const [targetSocketId] = targetSocketEntry;
+        io.to(targetSocketId).emit('user:pinned-you', {
+          pinnedByUserId: user.userId,
+          pinnedByDisplayName: `User_${user.userId.slice(0, 6)}`,
+        });
+      }
     });
 
     socket.on('user:unpin', async (data) => {

@@ -121,4 +121,19 @@ class ApiService {
       throw Exception(body['error'] ?? 'Failed to respond to invite');
     }
   }
+
+  Future<List<dynamic>> getFriendLocations() async {
+    final r = await http.get(Uri.parse('$baseUrl/api/social/friends/locations'), headers: _headers);
+    if (r.statusCode == 200) return jsonDecode(r.body) as List<dynamic>;
+    throw Exception('Failed to get friend locations');
+  }
+
+  Future<void> deleteAccount() async {
+    final r = await http.delete(Uri.parse('$baseUrl/api/auth/account'), headers: _headers);
+    if (r.statusCode != 200) {
+      final body = jsonDecode(r.body);
+      throw Exception(body['error'] ?? 'Failed to delete account');
+    }
+    await clearToken();
+  }
 }

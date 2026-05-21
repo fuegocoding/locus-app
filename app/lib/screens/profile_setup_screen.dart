@@ -15,7 +15,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _ctrl = TextEditingController();
   final _focusNode = FocusNode();
 
-  Timer? _debounce;
   bool _checking = false;
   bool _available = false;
   String? _serverStatus; // 'available' | 'taken' | null
@@ -26,7 +25,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   void dispose() {
     _ctrl.dispose();
     _focusNode.dispose();
-    _debounce?.cancel();
     super.dispose();
   }
 
@@ -47,42 +45,33 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _onChanged(String v) {
-    final trimmed = v.trim();
-    final local = _localValidate(trimmed);
-
     setState(() {
-      _touched = true;
-      _localError = local;
+      _localError = null;
       _serverStatus = null;
       _available = false;
-    });
-
-    if (local != null || trimmed.length < 2) return;
-
-    // Debounce server availability check
-    _debounce?.cancel();
-    setState(() => _checking = true);
-    _debounce = Timer(const Duration(milliseconds: 550), () async {
-      final ok = await context.read<AppState>().checkUsername(trimmed);
-      if (mounted && _ctrl.text.trim() == trimmed) {
-        setState(() {
-          _checking = false;
-          _available = ok;
-          _serverStatus = ok ? 'available' : 'taken';
-        });
-      }
     });
   }
 
   Future<void> _save() async {
     final name = _ctrl.text.trim();
     final local = _localValidate(name);
-    setState(() { _touched = true; _localError = local; });
-    if (local != null || !_available) return;
+    setState(() { _touched = true; _localError = local; _serverStatus = null; });
+    if (local != null) return;
+
+    setState(() => _checking = true);
+    final ok = await context.read<AppState>().checkUsername(name);
+    if (!mounted) return;
+
+    setState(() {
+      _checking = false;
+      _available = ok;
+      _serverStatus = ok ? 'available' : 'taken';
+    });
+    if (!ok) return;
 
     final state = context.read<AppState>();
-    final ok = await state.updateProfile(name);
-    if (!ok && mounted) {
+    final saved = await state.updateProfile(name);
+    if (!saved && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Failed to save username. Please try again.'),
@@ -173,12 +162,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  bool get _canSave {
-    return _localError == null &&
-        _serverStatus == 'available' &&
-        _ctrl.text.trim().length >= 2 &&
-        !_checking;
-  }
+  bool get _canSave => _ctrl.text.trim().length >= 2 && !_checking;
 
   // ─── Build ───────────────────────────────────────────────────────────────
 
@@ -208,13 +192,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         const Color(0xFFC4B5FD).withOpacity(0.6),
                       ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6C63FF).withOpacity(0.3),
-                        blurRadius: 24,
-                        spreadRadius: 4,
-                      ),
-                    ],
                   ),
                   child: const Icon(Icons.person_rounded, size: 40, color: Colors.white),
                 ),

@@ -12,6 +12,9 @@ class SocketService {
   final _errorController = StreamController<String>.broadcast();
   final _videoController = StreamController<Map<String, dynamic>>.broadcast();
   final _inviteController = StreamController<Map<String, dynamic>>.broadcast();
+  final _accountDeletedController = StreamController<void>.broadcast();
+  final _friendLocationController = StreamController<Map<String, dynamic>>.broadcast();
+  final _pinnedYouController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
@@ -21,6 +24,9 @@ class SocketService {
   Stream<String> get errorStream => _errorController.stream;
   Stream<Map<String, dynamic>> get videoStream => _videoController.stream;
   Stream<Map<String, dynamic>> get inviteStream => _inviteController.stream;
+  Stream<void> get accountDeletedStream => _accountDeletedController.stream;
+  Stream<Map<String, dynamic>> get friendLocationStream => _friendLocationController.stream;
+  Stream<Map<String, dynamic>> get pinnedYouStream => _pinnedYouController.stream;
 
   bool get connected => _socket?.connected ?? false;
 
@@ -110,6 +116,18 @@ class SocketService {
 
     _socket!.on('invite:responded', (data) {
       _inviteController.add({'type': 'responded', ...data});
+    });
+
+    _socket!.on('account:deleted', (_) {
+      _accountDeletedController.add(null);
+    });
+
+    _socket!.on('friends:location', (data) {
+      _friendLocationController.add(data);
+    });
+
+    _socket!.on('user:pinned-you', (data) {
+      _pinnedYouController.add(data);
     });
   }
 

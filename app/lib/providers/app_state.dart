@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/socket_service.dart';
@@ -38,17 +39,21 @@ class AppState extends ChangeNotifier {
   String? _livekitRoom;
   String? _livekitToken;
   String? _livekitServerUrl;
+  String? _pinnedByMessage;
 
   List<dynamic> _friends = [];
   List<dynamic> _pendingInvites = [];
   bool _isLoadingFriends = false;
   bool _isLoadingInvites = false;
 
+  List<Map<String, dynamic>> _friendLocations = [];
+  Timer? _friendLocationTimer;
+
   AppState({String? serverUrl})
       : apiService = ApiService(
           baseUrl: serverUrl ??
               (kDebugMode
-                  ? (kIsWeb ? _devUrl : 'http://10.0.2.2:3001')
+                  ? (kIsWeb ? _devUrl : _prodUrl)
                   : _prodUrl),
         );
 
@@ -87,8 +92,10 @@ class AppState extends ChangeNotifier {
 
   List<dynamic> get friends => _friends;
   List<dynamic> get pendingInvites => _pendingInvites;
+  List<Map<String, dynamic>> get friendLocations => _friendLocations;
   bool get isLoadingFriends => _isLoadingFriends;
   bool get isLoadingInvites => _isLoadingInvites;
+  String? get pinnedByMessage => _pinnedByMessage;
 
   Future<void> init() async {
     await apiService.loadToken();
@@ -180,6 +187,7 @@ class AppState extends ChangeNotifier {
 
   void _connectSocket() {
     socketService.connect(apiService.baseUrl, apiService.authToken ?? '');
+    _startFriendLocationPolling();
 
     socketService.presenceStream.listen((ups) {
       for (final u in ups) {
@@ -235,6 +243,40 @@ class AppState extends ChangeNotifier {
     socketService.videoStream.listen((d) {
       if (d['type'] == 'started') { _remoteVideoEnabled[d['userId']] = true; notifyListeners(); }
       else if (d['type'] == 'stopped') { _remoteVideoEnabled[d['userId']] = false; notifyListeners(); }
+    });
+
+    socketService.accountDeletedStream.listen((_) {
+      _isAuthenticated = false;
+      _user = null;
+      _friends = [];
+      _pendingInvites = [];
+      _currentConvoy = null;
+      _convoyId = null;
+      _nearbyUsers.clear();
+      apiService.clearToken();
+      _friendLocationTimer?.cancel();
+      notifyListeners();
+    });
+
+    socketService.friendLocationStream.listen((data) {
+      final idx = _friendLocations.indexWhere((f) => f['userId'] == data['userId']);
+      if (idx >= 0) {
+        _friendLocations[idx] = data;
+      } else {
+        _friendLocations.add(data);
+      }
+      notifyListeners();
+    });
+
+    socketService.pinnedYouStream.listen((data) {
+      _pinnedByMessage = '${data['pinnedByDisplayName']} pinned you on the map!';
+      notifyListeners();
+      Future.delayed(const Duration(seconds: 5), () {
+        if (_pinnedByMessage != null) {
+          _pinnedByMessage = null;
+          notifyListeners();
+        }
+      });
     });
 
     socketService.inviteStream.listen((d) {
@@ -415,6 +457,23 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  void _startFriendLocationPolling() {
+    _friendLocationTimer?.cancel();
+    _friendLocationTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      try {
+        _friendLocations = (await apiService.getFriendLocations()).cast<Map<String, dynamic>>();
+        notifyListeners();
+      } catch (_) {}
+    });
+  }
+
+  Future<void> loadFriendLocations() async {
+    try {
+      _friendLocations = (await apiService.getFriendLocations()).cast<Map<String, dynamic>>();
+      notifyListeners();
+    } catch (_) {}
+  }
+
   Future<void> followUser(String targetUserId) async {
     try {
       await apiService.followUser(targetUserId);
@@ -442,6 +501,33 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       debugPrint('Search failed: $e');
       return [];
+    }
+  }
+
+  Future<bool> deleteAccount() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await apiService.deleteAccount();
+      _isAuthenticated = false;
+      _user = null;
+      _friends = [];
+      _pendingInvites = [];
+      _currentConvoy = null;
+      _convoyId = null;
+      _nearbyUsers.clear();
+      socketService.disconnect();
+      locationService.dispose();
+      audioService.dispose();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to delete account';
+      notifyListeners();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

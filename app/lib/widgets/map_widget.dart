@@ -11,14 +11,25 @@ class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
 
   @override
-  State<MapWidget> createState() => _MapWidgetState();
+  MapWidgetState createState() => MapWidgetState();
 }
 
-class _MapWidgetState extends State<MapWidget> {
+class MapWidgetState extends State<MapWidget> {
   final MapController _mapController = MapController();
+  bool followingUser = true;
 
-  void _onPositionUpdate(AppState state) {
+  void recenterOnUser(AppState state) {
     if (state.latitude != 0 && state.longitude != 0) {
+      _mapController.move(
+        LatLng(state.latitude, state.longitude),
+        _mapController.camera.zoom,
+      );
+      setState(() => followingUser = true);
+    }
+  }
+
+  void _followIfNeeded(AppState state) {
+    if (followingUser && state.latitude != 0 && state.longitude != 0) {
       _mapController.move(
         LatLng(state.latitude, state.longitude),
         _mapController.camera.zoom,
@@ -27,120 +38,178 @@ class _MapWidgetState extends State<MapWidget> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<AppState>();
+      if (state.latitude != 0 && state.longitude != 0) {
+        _mapController.move(
+          LatLng(state.latitude, state.longitude),
+          15,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onPositionUpdate(state));
 
     final userLocation = state.latitude != 0 && state.longitude != 0
         ? LatLng(state.latitude, state.longitude)
         : const LatLng(40.7128, -74.0060);
 
-    return FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: userLocation,
-        initialZoom: 15,
-        minZoom: 3,
-        maxZoom: 19,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-      ),
+    WidgetsBinding.instance.addPostFrameCallback((_) => _followIfNeeded(state));
+
+    return Stack(
       children: [
-        TileLayer(
-          urlTemplate: _tileUrl,
-          subdomains: const ['a', 'b', 'c', 'd'],
-          userAgentPackageName: 'com.locus.locus',
-          tileProvider: NetworkTileProvider(),
-        ),
-        MarkerLayer(
-          markers: [
-            Marker(
-              point: userLocation,
-              width: 40,
-              height: 40,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  border: Border.all(color: theme.colorScheme.primary, width: 2),
-                ),
-                child: Center(
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: userLocation,
+            initialZoom: 15,
+            minZoom: 3,
+            maxZoom: 19,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            ),
+            onMapEvent: (event) {
+              if (event is MapEventMoveStart && event.source != MapEventSource.mapController) {
+                setState(() => followingUser = false);
+              }
+            },
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: _tileUrl,
+              subdomains: const ['a', 'b', 'c', 'd'],
+              userAgentPackageName: 'com.locus.locus',
+              tileProvider: NetworkTileProvider(),
+            ),
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: userLocation,
+                  width: 40,
+                  height: 40,
                   child: Container(
-                    width: 12,
-                    height: 12,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: theme.colorScheme.primary,
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      border: Border.all(color: theme.colorScheme.primary, width: 2),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            ...state.nearbyUsers.map((user) {
-              final isSpeaking = state.speaking[user.userId] == true;
-              final isPinned = state.user?.pins.contains(user.userId) ?? false;
-              final volume = state.volumes[user.userId] ?? 0.5;
-              final displayName = user.userId.substring(0, 8);
-
-              return Marker(
-                point: LatLng(user.latitude, user.longitude),
-                width: 44,
-                height: 56,
-                child: GestureDetector(
-                  onTap: () => _showUserSheet(context, state, user, isPinned),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSpeaking
-                              ? theme.colorScheme.primary
-                              : isPinned
-                                  ? Colors.amber
-                                  : theme.colorScheme.primary.withOpacity(0.5),
-                          border: Border.all(
-                            color: isPinned ? Colors.amber : theme.colorScheme.primary,
-                            width: isSpeaking ? 3 : 1.5,
+                ...state.friendLocations.map((f) {
+                  return Marker(
+                    point: LatLng(f['latitude'] as double, f['longitude'] as double),
+                    width: 44,
+                    height: 56,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF10B981).withOpacity(0.7),
+                            border: Border.all(color: const Color(0xFF34D399), width: 2),
                           ),
-                          boxShadow: isSpeaking
-                              ? [
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary.withOpacity(0.4),
-                                    blurRadius: 12,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                              : null,
+                          child: Center(
+                            child: Icon(Icons.person, size: 18, color: Colors.white),
+                          ),
                         ),
-                        child: Center(
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                           child: Text(
-                            '${(volume * 100).round()}',
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            f['displayName'] ?? f['userId'].toString().substring(0, 8),
+                            style: const TextStyle(fontSize: 8, color: Colors.white70),
                           ),
                         ),
+                      ],
+                    ),
+                  );
+                }),
+                ...state.nearbyUsers.map((user) {
+                  final isSpeaking = state.speaking[user.userId] == true;
+                  final isPinned = state.user?.pins.contains(user.userId) ?? false;
+                  final volume = state.volumes[user.userId] ?? 0.5;
+                  final displayName = user.userId.substring(0, 8);
+
+                  return Marker(
+                    point: LatLng(user.latitude, user.longitude),
+                    width: 44,
+                    height: 56,
+                    child: GestureDetector(
+                      onTap: () => _showUserSheet(context, state, user, isPinned),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isSpeaking
+                                  ? theme.colorScheme.primary
+                                  : isPinned
+                                      ? Colors.amber
+                                      : theme.colorScheme.primary.withOpacity(0.5),
+                              border: Border.all(
+                                color: isPinned ? Colors.amber : theme.colorScheme.primary,
+                                width: isSpeaking ? 3 : 1.5,
+                              ),
+                              boxShadow: isSpeaking
+                                  ? [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary.withOpacity(0.4),
+                                        blurRadius: 12,
+                                        spreadRadius: 2,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${(volume * 100).round()}',
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.black87,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              displayName,
+                              style: const TextStyle(fontSize: 8, color: Colors.white70),
+                            ),
+                          ),
+                        ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: Colors.black87,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(
-                          displayName,
-                          style: const TextStyle(fontSize: 8, color: Colors.white70),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+                    ),
+                  );
+                }),
+              ],
+            ),
           ],
         ),
       ],

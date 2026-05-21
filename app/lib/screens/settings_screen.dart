@@ -67,6 +67,12 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () => _confirmLogout(context, state),
           ),
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+            subtitle: const Text('Permanently delete all data', style: TextStyle(color: Colors.white38, fontSize: 12)),
+            onTap: () => _confirmDelete(context, state),
+          ),
           _sectionHeader('About', theme),
           const ListTile(
             title: Text('Version'),
@@ -192,6 +198,33 @@ class SettingsScreen extends StatelessWidget {
     state.apiService.updateProfile({'privacyMode': mode});
     state.user?.privacyMode = mode;
     Navigator.pop(context);
+  }
+
+  void _confirmDelete(BuildContext context, AppState state) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text('This will permanently delete your account and all associated data. This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final ok = await state.deleteAccount();
+              if (ok && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete Everything', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _confirmLogout(BuildContext context, AppState state) {

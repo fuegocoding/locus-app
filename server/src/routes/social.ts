@@ -3,6 +3,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/db';
 import { sendPushNotification } from '../services/notification';
 import { getSocketIdByUserId, isUserOnline } from '../socket';
+import { getPresence } from '../services/redis';
 
 const router = Router();
 
@@ -28,8 +29,6 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res: Response): P
       select: {
         id: true,
         displayName: true,
-        avatar: true,
-        vehicleTag: true,
       },
       take: 20,
     });
@@ -194,27 +193,22 @@ router.get('/friends', authMiddleware, async (req: AuthRequest, res: Response): 
   try {
     const currentUserId = req.userId!;
 
-    // Query for mutual followers
-    const friends = await prisma.user.findMany({
-      where: {
-        followers: {
-          some: { followerId: currentUserId },
-        },
-        following: {
-          some: { followingId: currentUserId },
-        },
-      },
-      select: {
-        id: true,
-        displayName: true,
-        avatar: true,
-        vehicleTag: true,
-      },
-    });
+    const friendRecords = await prisma.$queryRaw<Array<{id: string; displayName: string}>>`
+      SELECT u.id, u."displayName"
+      FROM "User" u
+      WHERE EXISTS (
+        SELECT 1 FROM "Follow" f1
+        WHERE f1."followerId" = ${currentUserId} AND f1."followingId" = u.id
+      )
+      AND EXISTS (
+        SELECT 1 FROM "Follow" f2
+        WHERE f2."followerId" = u.id AND f2."followingId" = ${currentUserId}
+      )
+    `;
 
-    // Add online status
-    const friendsWithStatus = friends.map((f) => ({
-      ...f,
+    const friendsWithStatus = friendRecords.map((f: any) => ({
+      id: f.id,
+      displayName: f.displayName,
       isOnline: isUserOnline(f.id),
     }));
 
@@ -225,25 +219,62 @@ router.get('/friends', authMiddleware, async (req: AuthRequest, res: Response): 
   }
 });
 
+// Get online friend locations (for map markers)
+router.get('/friends/locations', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.userId!;
+
+    const friendRecords = await prisma.$queryRaw<Array<{ id: string; displayName: string }>>`
+      SELECT u.id, u."displayName"
+      FROM "User" u
+      WHERE EXISTS (
+        SELECT 1 FROM "Follow" f1
+        WHERE f1."followerId" = ${currentUserId} AND f1."followingId" = u.id
+      )
+      AND EXISTS (
+        SELECT 1 FROM "Follow" f2
+        WHERE f2."followerId" = u.id AND f2."followingId" = ${currentUserId}
+      )
+    `;
+
+        const locations = [];
+    for (const friend of friendRecords) {
+      if (isUserOnline(friend.id)) {
+        const presence = await getPresence(friend.id);
+        if (presence) {
+          locations.push({
+            userId: friend.id,
+            displayName: friend.displayName,
+            latitude: presence.latitude,
+            longitude: presence.longitude,
+            heading: presence.heading,
+          });
+        }
+      }
+    }
+
+    res.json(locations);
+  } catch (error: any) {
+    console.error('[Social] Get friend locations error:', error);
+    res.status(500).json({ error: 'Failed to get friend locations' });
+  }
+});
+
 // Get users I am following
 router.get('/following', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const currentUserId = req.userId!;
-    const following = await prisma.follow.findMany({
-      where: { followerId: currentUserId },
-      include: {
-        following: {
-          select: {
-            id: true,
-            displayName: true,
-            avatar: true,
-            vehicleTag: true,
-          },
+    const followingUsers = await prisma.user.findMany({
+      where: {
+        followers: {
+          some: { followerId: currentUserId },
         },
       },
+      select: {
+        id: true,
+        displayName: true,
+      },
     });
-
-    const followingUsers = following.map((f) => f.following);
     res.json(followingUsers);
   } catch (error: any) {
     console.error('[Social] Get following error:', error);
@@ -255,21 +286,17 @@ router.get('/following', authMiddleware, async (req: AuthRequest, res: Response)
 router.get('/followers', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const currentUserId = req.userId!;
-    const followers = await prisma.follow.findMany({
-      where: { followingId: currentUserId },
-      include: {
-        follower: {
-          select: {
-            id: true,
-            displayName: true,
-            avatar: true,
-            vehicleTag: true,
-          },
+    const followerUsers = await prisma.user.findMany({
+      where: {
+        following: {
+          some: { followingId: currentUserId },
         },
       },
+      select: {
+        id: true,
+        displayName: true,
+      },
     });
-
-    const followerUsers = followers.map((f) => f.follower);
     res.json(followerUsers);
   } catch (error: any) {
     console.error('[Social] Get followers error:', error);

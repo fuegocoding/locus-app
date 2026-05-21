@@ -299,33 +299,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: [
               // ── Logo ──────────────────────────────────────────────────
               const SizedBox(height: 16),
-              Container(
-                alignment: Alignment.center,
-                child: Container(
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Image.asset(
+                  'assets/icon/app_icon.png',
                   width: 80,
                   height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF6C63FF).withOpacity(0.8),
-                        const Color(0xFFC4B5FD).withOpacity(0.6),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6C63FF).withOpacity(0.35),
-                        blurRadius: 28,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.my_location_rounded, size: 40, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               Text(
                 'Locus',
                 textAlign: TextAlign.center,
@@ -397,7 +379,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-\(\)]'))],
                   style: const TextStyle(color: Colors.white, fontSize: 17),
                   onChanged: _onPhoneChanged,
-                  onTap: () => setState(() => _phoneTouched = true),
                   decoration: InputDecoration(
                     hintText:
                         '${'0' * _selectedCountry.minLen}  (${_selectedCountry.minLen} digits)',
