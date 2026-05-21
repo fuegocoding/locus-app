@@ -92374,7 +92374,7 @@ j(a,b){if(b==null)return!1
 return b instanceof A.fS&&this.a===b.a&&this.b===b.b}}
 A.aDb.prototype={
 $1(a){var s=t.V0,r=t.N,q=t.y
-return new A.hL(new A.a4e("http://localhost:3001"),new A.an1(A.iO(!1,t.eU),A.iO(!1,s),A.iO(!1,t.Yl),A.iO(!1,t.a),A.iO(!1,r)),new A.acD(A.iO(!1,s)),new A.a4B(A.iO(!1,q)),A.b([],t.tP),A.o(r,t.i),A.o(r,q),$.au())},
+return new A.hL(new A.a4e("https://locus-production-99b7.up.railway.app"),new A.an1(A.iO(!1,t.eU),A.iO(!1,s),A.iO(!1,t.Yl),A.iO(!1,t.a),A.iO(!1,r)),new A.acD(A.iO(!1,s)),new A.a4B(A.iO(!1,q)),A.b([],t.tP),A.o(r,t.i),A.o(r,q),$.au())},
 $S:574}
 A.P6.prototype={
 J(a){var s=null
@@ -92514,7 +92514,7 @@ break
 case 1:return A.M(q,r)}})
 return A.N($async$lm,r)},
 PC(){var s=this,r=s.b,q=s.a.b
-r.aqA("http://localhost:3001",q==null?"":q)
+r.aqA("https://locus-production-99b7.up.railway.app",q==null?"":q)
 q=r.b
 new A.c9(q,A.l(q).i("c9<1>")).e0(new A.a4o(s))
 q=r.c

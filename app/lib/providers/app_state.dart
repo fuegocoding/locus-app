@@ -35,7 +35,7 @@ class AppState extends ChangeNotifier {
   String? _livekitToken;
 
   AppState({String? serverUrl})
-      : apiService = ApiService(baseUrl: serverUrl ?? _devUrl);
+      : apiService = ApiService(baseUrl: serverUrl ?? _prodUrl);
 
   User? get user => _user;
   bool get isAuthenticated => _isAuthenticated;
