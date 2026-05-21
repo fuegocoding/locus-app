@@ -74,11 +74,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onPressed: state.isLoading
                         ? null
                         : () async {
-                            final phone = _phoneController.text.trim();
-                            if (phone.length < 6) return;
+                            var phone = _phoneController.text.trim();
+                            if (!phone.startsWith('+')) phone = '+$phone';
+                            if (phone.length < 8) return;
                             _phone = phone;
                             await state.sendVerificationCode(phone);
-                            setState(() => _codeSent = true);
+                            if (state.error == null) {
+                              setState(() => _codeSent = true);
+                            }
                           },
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(

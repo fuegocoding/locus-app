@@ -30,7 +30,9 @@ class ApiService {
 
   Future<Map<String, dynamic>> sendVerificationCode(String phone) async {
     final r = await http.post(Uri.parse('$baseUrl/api/auth/verify/send'), headers: _headers, body: jsonEncode({'phone': phone}));
-    return jsonDecode(r.body);
+    final body = jsonDecode(r.body) as Map<String, dynamic>;
+    if (r.statusCode != 200) throw Exception(body['error'] ?? 'Failed to send code');
+    return body;
   }
   Future<Map<String, dynamic>> verifyCode(String phone, String code) async {
     final r = await http.post(Uri.parse('$baseUrl/api/auth/verify/check'), headers: _headers, body: jsonEncode({'phone': phone, 'code': code}));
