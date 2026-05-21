@@ -7,7 +7,7 @@ import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
   static const String _devUrl = 'http://localhost:3001';
-  static const String _prodUrl = 'https://YOUR_RAILWAY_URL.up.railway.app';
+  static const String _prodUrl = 'https://locus-production-99b7.up.railway.app';
 
   final ApiService apiService;
   final SocketService socketService = SocketService();
