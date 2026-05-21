@@ -18,8 +18,9 @@ function getTwilioClient() {
 
 // Send verification code via Twilio
 router.post('/verify/send', async (req: Request, res: Response): Promise<void> => {
+  let phone = '';
   try {
-    const phone = (req.body.phone || '').trim();
+    phone = (req.body.phone || '').trim();
     if (!phone) {
       res.status(400).json({ error: 'Phone number required' });
       return;
@@ -73,10 +74,10 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
     }
 
     // First check Redis (handles dev mode and Twilio fallback)
-    const r = getRedis();
-    const storedCode = await r.get(`verify:${phone}`);
+    const redisCheck = getRedis();
+    const storedCode = await redisCheck.get(`verify:${phone}`);
     if (storedCode === code) {
-      await r.del(`verify:${phone}`);
+      await redisCheck.del(`verify:${phone}`);
     } else if (!isProd) {
       // Dev mode: no valid Redis code
       res.status(400).json({ error: 'Invalid code' });
@@ -106,14 +107,14 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
     }
 
     // Check if user exists, otherwise create
-    const r = getRedis();
-    let userId = await r.get(`phone:${phone}`);
+    const redis = getRedis();
+    let userId = await redis.get(`phone:${phone}`);
     const isNewUser = !userId;
 
     if (!userId) {
       userId = generateUserId();
-      await r.set(`phone:${phone}`, userId);
-      await r.hset('locus:users', userId, JSON.stringify({
+      await redis.set(`phone:${phone}`, userId);
+      await redis.hset('locus:users', userId, JSON.stringify({
         id: userId,
         phone,
         displayName: `User_${userId.slice(0, 6)}`,
