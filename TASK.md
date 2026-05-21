@@ -51,18 +51,43 @@
 - [x] Redis (Railway Redis)
 - [x] LiveKit Cloud for WebRTC audio
 - [x] Twilio Verify for phone auth
-- [ ] Database (PostgreSQL/MongoDB) for user profiles, convoys, tasks
+- [x] PostgreSQL database for user profiles, convoys, tasks, social features
 - [ ] CDN for assets
 - [ ] Monitoring/alerting (logs, metrics, uptime)
 - [ ] CI/CD pipeline for automated builds
 
 ## ✨ Missing Features
 - [ ] Real-time audio quality optimization (echo cancellation, noise suppression)
-- [ ] Push notifications for convoy invites, nearby alerts
 - [ ] Localization (i18n)
 - [ ] StreetPass encounter journal
 - [ ] Tasks/rewards system backend
 - [ ] Premium subscription flow
+
+## ✅ Social Features - DEPLOYED
+- [x] Friend system: follow/unfollow users, friend list (mutual follows)
+- [x] Quick convoy invitation from friend list
+- [x] Search users by display name
+- [x] Push notifications for new followers and convoy invites
+- [x] Convoy invite accept/decline with Socket.io real-time updates
+- [x] Realtime invite banners in-app
+- [x] Friends sheet with DraggableScrollableSheet (swipe to expand)
+- [x] "Find People" search with auto-focus keyboard
+
+## 🎨 UI Polish - COMPLETED
+- [x] Removed all `Colors.blue` references from codebase, replaced with purple theme (`0xFF6C63FF`, `0xFFC4B5FD`)
+- [x] Converted GestureDetector-based buttons to Material InkWell for proper ripple/splash effects
+- [x] Applied purple theme to convoy panel, video grid, home screen mode indicator and Live badge
+
+## 🧹 Backlog
+- [ ] Onboarding validation errors (phone, username) should only appear after the user clicks Continue, not while typing. Prevent submission instead of interrupting with live errors.
+- [ ] See friends on map with distinct markers
+- [ ] Reciprocal pin notification (popup to pin back or remove)
+- [ ] Relocate button — recenter map on user's location when they've panned away
+- [ ] Build a marketing landing page (replace the current minimal one)
+- [ ] QR code friends — scan personal QR to add friends
+  - [ ] Personal QR code on profile/settings (others scan to add you)
+  - [ ] QR code reader in Find People screen (share + scan buttons below search bar)
+  - [ ] Also accessible from the existing Share button in the top bar
 
 ## 🚀 Future Roadmap
 ### Profile & Identity
