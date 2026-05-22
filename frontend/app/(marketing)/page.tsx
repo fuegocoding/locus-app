@@ -30,7 +30,7 @@ export default function LandingPage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/onboarding"
+              href="https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk"
               className="px-8 py-4 bg-primary text-white rounded-xl text-lg font-bold hover:bg-primary-dim transition-all duration-200 w-full sm:w-auto shadow-sm"
             >
               Start for Free
@@ -255,7 +255,7 @@ export default function LandingPage() {
             Join your first convoy in under 30 seconds.
           </p>
           <Link
-            href="/onboarding"
+            href="https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk"
             className="inline-block px-10 py-5 bg-primary text-white rounded-xl text-xl font-bold hover:bg-primary-dim transition-all duration-200 shadow-sm"
           >
             Get Started &mdash; it&apos;s free
