@@ -1,6 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="100%" height="100%">
-  <g fill="#7c6fff">
-    <path d="M20,50 L20,130 L100,130 L100,50 L80,50 L80,110 L40,110 L40,50 Z" />
-    <path d="M130,100 L130,20 L50,20 L50,100 L70,100 L70,40 L110,40 L110,100 Z" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2c1454"/>
+      <stop offset="100%" stop-color="#0f0326"/>
+    </linearGradient>
+
+    <!-- Lighter Purple Gradient for Waves (ethereal, matches core direction) -->
+    <linearGradient id="wave-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffff"/>
+      <stop offset="100%" stop-color="#b89fe8"/>
+    </linearGradient>
+    
+    <!-- Core Purple Gradient (unchanged) -->
+    <linearGradient id="b" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cfaeff"/>
+      <stop offset="100%" stop-color="#8b5de0"/>
+    </linearGradient>
+    
+    <!-- Dark Satellite Gradient -->
+    <linearGradient id="c" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c2585"/>
+      <stop offset="100%" stop-color="#240752"/>
+    </linearGradient>
+    
+    <!-- Rounded Square Clip Path -->
+    <clipPath id="rounded-square">
+      <rect x="0" y="0" width="512" height="512" rx="96" ry="96"/>
+    </clipPath>
+  </defs>
+
+  <!-- Icon Container with Rounded Square Clipping -->
+  <g clip-path="url(#rounded-square)">
+    <!-- Background -->
+    <rect width="512" height="512" fill="url(#bg-grad)"/>
+
+    <!-- Subdued grid pattern for a premium tech feel -->
+    <circle cx="256" cy="256" r="230" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.05"/>
+    <circle cx="256" cy="256" r="180" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.03"/>
+
+    <!-- Centered and Scaled Original Artwork -->
+    <g transform="translate(0, 60) scale(2)">
+      <!-- Concentric Waves - Lighter purple gradient, same directional flow -->
+      <g transform="rotate(-10 95 145)" fill="none" stroke="url(#wave-grad)" stroke-width="22" stroke-linecap="round" opacity="0.95">
+        <path d="M95 75a70 70 0 0 1 70 70"/>
+        <path d="M95 45a100 100 0 0 1 100 100"/>
+        <path d="M95 15a130 130 0 0 1 130 130"/>
+      </g>
+      <!-- Central Core - Original purple gradient -->
+      <circle cx="95" cy="145" r="48" fill="url(#b)"/>
+      <!-- Dark Satellite Element -->
+      <ellipse cx="138" cy="168" rx="32" ry="22" transform="rotate(-35 138 168)" fill="url(#c)"/>
+    </g>
   </g>
 </svg>
