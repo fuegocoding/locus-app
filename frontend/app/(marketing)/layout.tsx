@@ -11,10 +11,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <span className="text-lg font-bold text-foreground tracking-tight">Locus</span>
           </Link>
           <nav className="flex items-center gap-6">
-            <Link href="#features" className="text-sm text-muted hover:text-foreground transition-colors hidden sm:block">
+            <Link href="/#features" className="text-sm text-muted hover:text-foreground transition-colors hidden sm:block">
               Features
             </Link>
-            <Link href="#how-it-works" className="text-sm text-muted hover:text-foreground transition-colors hidden sm:block">
+            <Link href="/#how-it-works" className="text-sm text-muted hover:text-foreground transition-colors hidden sm:block">
               How it works
             </Link>
             <Link href="/onboarding" className="text-sm text-muted hover:text-foreground transition-colors">
