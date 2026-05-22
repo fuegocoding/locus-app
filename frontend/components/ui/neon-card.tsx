@@ -14,10 +14,10 @@ export function NeonCard({
   ...props
 }: NeonCardProps) {
   const glowClasses = {
-    primary: 'hover:shadow-card-hover hover:border-primary/60',
-    cyan: 'hover:shadow-neon-cyan hover:border-cyan/60',
-    green: 'hover:shadow-neon-green hover:border-proximity/60',
-    blue: 'hover:shadow-neon-blue hover:border-convoy/60',
+    primary: 'hover:border-primary/60',
+    cyan: 'hover:border-cyan/60',
+    green: 'hover:border-proximity/60',
+    blue: 'hover:border-convoy/60',
     none: 'hover:border-border-bright',
   }
 
@@ -25,9 +25,8 @@ export function NeonCard({
     <div
       className={cn(
         'relative rounded-card p-5 bg-surface-raised border border-border',
-        'transition-all duration-300 shadow-card',
+        'transition-all duration-200',
         glowClasses[glow],
-        gradient && 'gradient-border',
         className
       )}
       {...props}

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { ArrowRight, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Logo } from '@/components/ui/logo'
 import { authApi, ApiError } from '@/lib/api'
 
 const schema = z.object({
@@ -43,17 +44,12 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-background grid-bg flex items-center justify-center px-4">
-      {/* Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/8 blur-[100px] pointer-events-none" />
-
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary shadow-neon flex items-center justify-center">
-              <span className="text-white font-black text-lg">L</span>
-            </div>
-            <span className="text-2xl font-black gradient-text">Locus</span>
+          <Link href="/" className="flex items-center gap-2 mb-6 group">
+            <Logo className="w-9 h-9 text-primary transition-transform duration-200 group-hover:scale-105" />
+            <span className="text-2xl font-black text-foreground tracking-tight">Locus</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground mb-2">Enter your number</h1>
           <p className="text-sm text-muted text-center">

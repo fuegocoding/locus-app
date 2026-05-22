@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Users, ArrowRight, Download, UserPlus } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 interface PageProps {
   params: { code: string }
@@ -43,35 +44,28 @@ export default async function JoinPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background grid-bg flex items-center justify-center px-4 relative">
-      {/* Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/5 blur-[100px] pointer-events-none" />
-
       <div className="relative w-full max-w-sm text-center space-y-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-primary shadow-neon flex items-center justify-center">
-            <span className="text-white font-black">L</span>
-          </div>
-          <span className="text-xl font-black gradient-text">Locus</span>
+        <Link href="/" className="flex items-center justify-center gap-2 mb-2 group">
+          <Logo className="w-8 h-8 text-primary transition-transform duration-200 group-hover:scale-105" />
+          <span className="text-xl font-black text-foreground tracking-tight">Locus</span>
         </Link>
 
         {convoy ? (
           <>
             {/* Convoy card */}
-            <div className="gradient-border rounded-panel">
-              <div className="bg-surface-raised rounded-panel p-6">
-                <div className="w-14 h-14 rounded-full bg-convoy/20 border-2 border-convoy/40 flex items-center justify-center mx-auto mb-4 shadow-neon-blue">
-                  <Users className="w-6 h-6 text-convoy" />
-                </div>
-                <h1 className="text-2xl font-black text-foreground mb-1">{convoy.name}</h1>
-                <p className="text-muted text-sm">
-                  {convoy.memberCount} member{convoy.memberCount !== 1 ? 's' : ''} · Convoy
-                </p>
-                <div className="mt-3 px-4 py-2 bg-surface rounded-xl border border-border inline-block">
-                  <span className="font-mono text-lg font-bold tracking-widest text-foreground">
-                    {code}
-                  </span>
-                </div>
+            <div className="bg-surface-raised border border-border rounded-panel p-6">
+              <div className="w-14 h-14 rounded-full bg-convoy/20 border-2 border-convoy/40 flex items-center justify-center mx-auto mb-4">
+                <Users className="w-6 h-6 text-convoy" />
+              </div>
+              <h1 className="text-2xl font-black text-foreground mb-1">{convoy.name}</h1>
+              <p className="text-muted text-sm">
+                {convoy.memberCount} member{convoy.memberCount !== 1 ? 's' : ''} · Convoy
+              </p>
+              <div className="mt-3 px-4 py-2 bg-surface rounded-xl border border-border inline-block">
+                <span className="font-mono text-lg font-bold tracking-widest text-foreground">
+                  {code}
+                </span>
               </div>
             </div>
 
@@ -79,7 +73,7 @@ export default async function JoinPage({ params }: PageProps) {
             <div className="space-y-3">
               <Link
                 href={`/app/map?join=${code}`}
-                className="flex items-center justify-center gap-2 w-full py-4 bg-convoy text-white rounded-xl font-bold text-base shadow-neon-blue hover:shadow-[0_0_30px_rgba(68,136,255,0.7)] transition-all"
+                className="flex items-center justify-center gap-2 w-full py-4 bg-convoy text-white rounded-xl font-bold text-base hover:bg-convoy/90 transition-all shadow-sm"
               >
                 Join in browser <ArrowRight className="w-4 h-4" />
               </Link>
@@ -99,33 +93,31 @@ export default async function JoinPage({ params }: PageProps) {
         ) : publicUser ? (
           <>
             {/* User/Friend Referral card */}
-            <div className="gradient-border rounded-panel">
-              <div className="bg-surface-raised rounded-panel p-6">
-                <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center mx-auto mb-4 shadow-neon">
-                  <UserPlus className="w-6 h-6 text-primary-light" />
-                </div>
-                <h1 className="text-2xl font-black text-foreground mb-1">@{publicUser.displayName}</h1>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                  {publicUser.premium && (
-                    <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-[10px] font-semibold text-primary-light tracking-wide uppercase">
-                      Premium Driver
-                    </span>
-                  )}
-                  <span className="text-muted text-sm">
-                    {publicUser.points} points
-                  </span>
-                </div>
-                <p className="mt-4 text-sm text-muted leading-relaxed max-w-[260px] mx-auto">
-                  invited you to join Locus, the proximity radar voice chat app for drivers.
-                </p>
+            <div className="bg-surface-raised border border-border rounded-panel p-6">
+              <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center mx-auto mb-4">
+                <UserPlus className="w-6 h-6 text-primary-light" />
               </div>
+              <h1 className="text-2xl font-black text-foreground mb-1">@{publicUser.displayName}</h1>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                {publicUser.premium && (
+                  <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-[10px] font-semibold text-primary-light tracking-wide uppercase">
+                    Premium Driver
+                  </span>
+                )}
+                <span className="text-muted text-sm">
+                  {publicUser.points} points
+                </span>
+              </div>
+              <p className="mt-4 text-sm text-muted leading-relaxed max-w-[260px] mx-auto">
+                invited you to join Locus, the proximity radar voice chat app for drivers.
+              </p>
             </div>
 
             {/* CTAs */}
             <div className="space-y-3">
               <Link
                 href={`/onboarding?ref=${publicUser.displayName}`}
-                className="flex items-center justify-center gap-2 w-full py-4 bg-primary text-white rounded-xl font-bold text-base shadow-neon hover:shadow-[0_0_30px_rgba(108,99,255,0.7)] transition-all"
+                className="flex items-center justify-center gap-2 w-full py-4 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary-dim transition-all shadow-sm"
               >
                 Get Started <ArrowRight className="w-4 h-4" />
               </Link>

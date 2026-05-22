@@ -2,29 +2,24 @@ import Link from 'next/link'
 import { Radio, Car, MapPin, ShieldCheck, Zap, QrCode } from 'lucide-react'
 import { NeonCard } from '@/components/ui/neon-card'
 import { Badge } from '@/components/ui/badge'
+import { Logo } from '@/components/ui/logo'
 
 export default function LandingPage() {
   return (
-    <main className="relative overflow-hidden">
+    <main className="relative overflow-hidden bg-background">
 
       {/* ─────────────────── HERO ─────────────────── */}
-      <section className="relative min-h-screen flex items-center justify-center grid-bg noise-overlay pt-20">
-        {/* Glow blobs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full bg-cyan/6 blur-[80px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-[250px] h-[250px] rounded-full bg-proximity/6 blur-[80px] pointer-events-none" />
-
+      <section className="relative min-h-screen flex items-center justify-center grid-bg noise-overlay pt-20 border-b border-border/40">
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          {/* Live badge */}
+          {/* Badge */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="live-dot" />
-            <Badge variant="live">Live proximity audio</Badge>
+            <Badge variant="default">Proximity Audio Network</Badge>
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
+          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight text-foreground">
             Talk to{' '}
-            <span className="gradient-text">who&apos;s near you</span>
+            <span className="text-primary">who&apos;s near you</span>
           </h1>
 
           <p className="text-xl md:text-2xl text-muted max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -36,7 +31,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/onboarding"
-              className="px-8 py-4 bg-primary text-white rounded-xl text-lg font-bold shadow-neon hover:shadow-neon-lg hover:bg-primary-glow transition-all duration-200 w-full sm:w-auto"
+              className="px-8 py-4 bg-primary text-white rounded-xl text-lg font-bold hover:bg-primary-dim transition-all duration-200 w-full sm:w-auto shadow-sm"
             >
               Start for Free
             </Link>
@@ -77,7 +72,7 @@ export default function LandingPage() {
 
           {/* Map preview mockup */}
           <div className="mt-14 relative max-w-2xl mx-auto">
-            <div className="gradient-border rounded-panel overflow-hidden shadow-[0_0_80px_rgba(124,111,255,0.2)]">
+            <div className="border border-border rounded-panel overflow-hidden shadow-card">
               <div className="bg-surface-raised rounded-panel p-1">
                 <MapMockup />
               </div>
@@ -87,7 +82,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────── STATS BAR ─────────────────── */}
-      <section className="py-10 px-6 border-y border-border bg-surface/60">
+      <section className="py-10 px-6 border-b border-border bg-surface/60">
         <div className="max-w-3xl mx-auto grid grid-cols-3 divide-x divide-border">
           {STATS.map((s) => (
             <div key={s.label} className="text-center px-4">
@@ -103,8 +98,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              Built for{' '}
-              <span className="gradient-text-warm">the road</span>
+              Built for <span className="text-primary">the road</span>
             </h2>
             <p className="text-muted text-lg max-w-xl mx-auto">
               Not a walkie-talkie app. A live audio layer over physical space.
@@ -118,7 +112,7 @@ export default function LandingPage() {
               iconColor="text-proximity"
               title="Proximity Voice"
               description="Hear everyone nearby. Volume scales with distance — the closer someone is, the louder they sound."
-              badge={{ label: 'Live', variant: 'live' }}
+              badge={{ label: 'Proximity', variant: 'proximity' }}
             />
             <FeatureCard
               glow="blue"
@@ -145,7 +139,7 @@ export default function LandingPage() {
             <FeatureCard
               glow="primary"
               Icon={Zap}
-              iconColor="text-primary-glow"
+              iconColor="text-primary"
               title="Under 2s to Live"
               description="Open the app, tap talk. No room codes, no setup. You're in proximity mode before you blink."
             />
@@ -161,7 +155,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────── MODE COMPARISON ─────────────────── */}
-      <section className="py-24 px-6 bg-surface/50">
+      <section className="py-24 px-6 bg-surface/50 border-y border-border/40">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-5xl font-black mb-4">Two modes. One app.</h2>
@@ -172,8 +166,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Proximity Mode */}
-            <div className="rounded-card border border-proximity/30 bg-surface-raised p-6 shadow-neon-green relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-proximity/5 blur-[60px] pointer-events-none" />
+            <div className="rounded-card border border-proximity/20 bg-surface-raised p-6 relative overflow-hidden">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-lg bg-proximity/15 border border-proximity/30 flex items-center justify-center">
                   <Radio className="w-4 h-4 text-proximity" />
@@ -200,8 +193,7 @@ export default function LandingPage() {
             </div>
 
             {/* Convoy Mode */}
-            <div className="rounded-card border border-convoy/30 bg-surface-raised p-6 shadow-neon-blue relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-convoy/5 blur-[60px] pointer-events-none" />
+            <div className="rounded-card border border-convoy/20 bg-surface-raised p-6 relative overflow-hidden">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-lg bg-convoy/15 border border-convoy/30 flex items-center justify-center">
                   <Car className="w-4 h-4 text-convoy" />
@@ -239,7 +231,7 @@ export default function LandingPage() {
           <div className="space-y-5">
             {STEPS.map((step, i) => (
               <div key={i} className="flex items-start gap-5 p-5 rounded-card border border-border bg-surface-raised hover:border-border-bright transition-colors">
-                <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0 shadow-neon-sm">
+                <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
                   {i + 1}
                 </div>
                 <div className="pt-0.5">
@@ -253,19 +245,18 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────── CTA ─────────────────── */}
-      <section className="py-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 grid-bg opacity-50" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
+      <section className="py-24 px-6 relative overflow-hidden border-t border-border">
+        <div className="absolute inset-0 grid-bg opacity-30" />
         <div className="relative max-w-2xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-4">
-            Ready to <span className="neon-text">go live?</span>
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-foreground">
+            Ready to <span className="text-primary">go live?</span>
           </h2>
           <p className="text-muted text-lg mb-8">
             Join your first convoy in under 30 seconds.
           </p>
           <Link
             href="/onboarding"
-            className="inline-block px-10 py-5 bg-primary text-white rounded-xl text-xl font-bold shadow-neon hover:shadow-neon-lg hover:scale-105 active:scale-95 transition-all duration-200"
+            className="inline-block px-10 py-5 bg-primary text-white rounded-xl text-xl font-bold hover:bg-primary-dim transition-all duration-200 shadow-sm"
           >
             Get Started &mdash; it&apos;s free
           </Link>
@@ -289,10 +280,8 @@ export default function LandingPage() {
       {/* ─────────────────── FOOTER ─────────────────── */}
       <footer className="border-t border-border py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-primary shadow-neon flex items-center justify-center">
-              <span className="text-white text-xs font-black">L</span>
-            </div>
+          <div className="flex items-center gap-2 group">
+            <Logo className="w-6 h-6 text-primary transition-transform duration-200 group-hover:scale-105" />
             <span className="font-bold text-foreground">Locus</span>
             <span className="text-muted text-sm ml-2">Talk to who&apos;s near you.</span>
           </div>
@@ -393,43 +382,22 @@ function MapMockup() {
         }}
       />
 
-      {/* Animated ping rings */}
-      <div
-        className="absolute rounded-full border border-proximity/40"
-        style={{
-          width: 80, height: 80,
-          top: '50%', left: '50%',
-          animation: 'ping-expand 2.8s ease-out infinite',
-          animationDelay: '0s',
-        }}
-      />
-      <div
-        className="absolute rounded-full border border-proximity/25"
-        style={{
-          width: 80, height: 80,
-          top: '50%', left: '50%',
-          animation: 'ping-expand 2.8s ease-out infinite',
-          animationDelay: '1.4s',
-        }}
-      />
-
       {/* Self */}
       <div className="absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10 }}>
-        <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shadow-neon animate-pulse">
+        <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold border border-primary-dim">
           ME
         </div>
       </div>
 
       {/* Nearby users */}
       {[
-        { x: '35%', y: '38%', label: 'RX', color: '#00FF87' },
-        { x: '62%', y: '62%', label: 'TK', color: '#00FF87' },
-        { x: '42%', y: '68%', label: 'JM', color: '#4488FF', convoy: true },
+        { x: '35%', y: '38%', label: 'RX', color: 'bg-proximity border border-proximity/40' },
+        { x: '62%', y: '62%', label: 'TK', color: 'bg-proximity border border-proximity/40' },
+        { x: '42%', y: '68%', label: 'JM', color: 'bg-convoy border border-convoy/40', convoy: true },
       ].map((u) => (
         <div key={u.label} className="absolute" style={{ left: u.x, top: u.y, transform: 'translate(-50%, -50%)', zIndex: 10 }}>
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-background relative"
-            style={{ background: u.color, boxShadow: `0 0 10px ${u.color}66` }}
+            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-background relative ${u.color}`}
           >
             {u.label}
             {u.convoy && (
@@ -444,7 +412,7 @@ function MapMockup() {
       {/* Top bar */}
       <div className="absolute top-3 left-3 right-3" style={{ zIndex: 20 }}>
         <div className="glass rounded-xl px-3 py-1.5 flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-proximity animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-proximity" />
           <span className="text-xs font-semibold text-foreground">Proximity</span>
           <span className="text-[10px] text-muted ml-auto">3 near</span>
         </div>
@@ -452,7 +420,7 @@ function MapMockup() {
 
       {/* Mic button */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2" style={{ zIndex: 20 }}>
-        <div className="w-12 h-12 rounded-full bg-primary shadow-neon flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-md">
           <span className="text-white text-lg">&#127897;</span>
         </div>
       </div>
