@@ -48,14 +48,14 @@ export function TopBar() {
         {/* Nav actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <Link
-            href="/app/tasks"
+            href="/tasks"
             className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200"
             title="Tasks"
           >
             <ClipboardList className="w-4.5 h-4.5" />
           </Link>
           <Link
-            href="/app/settings"
+            href="/settings"
             className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-all duration-200"
             title="Settings"
           >

@@ -6,14 +6,14 @@ import { Map, ClipboardList, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/app/map', label: 'Map', icon: Map },
-  { href: '/app/tasks', label: 'Tasks', icon: ClipboardList },
-  { href: '/app/settings', label: 'Settings', icon: Settings },
+  { href: '/map', label: 'Map', icon: Map },
+  { href: '/tasks', label: 'Tasks', icon: ClipboardList },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isMapPage = pathname === '/app/map'
+  const isMapPage = pathname === '/map'
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">

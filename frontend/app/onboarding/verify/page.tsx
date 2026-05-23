@@ -66,7 +66,7 @@ function VerifyForm() {
       if (user.displayName.startsWith('User_')) {
         router.push('/profile-setup')
       } else {
-        router.push('/app/map')
+        router.push('/map')
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Invalid code. Try again.')

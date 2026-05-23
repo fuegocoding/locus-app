@@ -55,7 +55,7 @@ export default function ProfileSetupPage() {
     try {
       const user = await authApi.updateProfile({ displayName })
       setUser(user as any)
-      router.push('/app/map')
+      router.push('/map')
     } catch (err) {
       setApiError(err instanceof ApiError ? err.message : 'Failed to save profile.')
     }

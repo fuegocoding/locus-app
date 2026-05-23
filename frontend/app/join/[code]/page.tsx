@@ -72,7 +72,7 @@ export default async function JoinPage({ params }: PageProps) {
             {/* CTAs */}
             <div className="space-y-3">
               <Link
-                href={`/app/map?join=${code}`}
+                href={`/map?join=${code}`}
                 className="flex items-center justify-center gap-2 w-full py-4 bg-convoy text-white rounded-xl font-bold text-base hover:bg-convoy/90 transition-all shadow-sm"
               >
                 Join in browser <ArrowRight className="w-4 h-4" />

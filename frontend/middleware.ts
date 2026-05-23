@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const PROTECTED_PREFIXES = ['/app']
-const AUTH_ONLY_PREFIXES = ['/onboarding', '/profile-setup'] // redirect to /app if already authed
+const PROTECTED_PREFIXES = ['/map', '/settings', '/tasks']
+const AUTH_ONLY_PREFIXES = ['/onboarding', '/profile-setup'] // redirect to /map if already authed
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'change-me-in-production'
@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthOnly && isAuthed) {
     // Already authenticated — send to app
-    return NextResponse.redirect(new URL('/app/map', request.url))
+    return NextResponse.redirect(new URL('/map', request.url))
   }
 
   return res
