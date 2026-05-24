@@ -25,6 +25,10 @@ model User {
   createdConvoys   Convoy[]           @relation("ConvoyCreator")
   convoyMemberships ConvoyMembership[]
   taskCompletions  TaskCompletion[]
+  premiumFeatures  UserPremiumFeature[]
+  referralsSent    Referral[]         @relation("Referrer")
+  referralsReceived Referral[]        @relation("Referee")
+  settings         UserSettings?
 
   // Social Relations
   following        Follow[]           @relation("UserFollowing")
@@ -115,13 +119,51 @@ model ConvoyInvite {
   receiver   User     @relation("ReceivedInvites", fields: [receiverId], references: [id], onDelete: Cascade)
 }
 
+model UserSettings {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  speedUnit     String   @default("auto") // "auto", "kmh", "mph"
+  pushToTalk    Boolean  @default(false)
+  anonymousMode Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPremiumFeature {
+  id        String    @id @default(uuid())
+  userId    String
+  featureId String // e.g. "unlimited-pins", "custom-avatar"
+  redeemedAt DateTime @default(now())
+  expiresAt DateTime? // null = permanent
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureId])
+}
+
+model Referral {
+  id          String    @id @default(uuid())
+  referrerId  String
+  refereeId   String    @unique
+  invitedAt   DateTime  @default(now())
+  convertedAt DateTime? // when referee completed first convoy / verified
+  rewardedAt  DateTime? // when referrer got points
+
+  referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee  User @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
+}
+
 model TaskCompletion {
   id           String   @id @default(uuid())
   userId       String
-  taskType     String // e.g. "REFERRAL", "AD", "PROFILE"
+  taskType     String // e.g. "referral", "watch-ad"
   pointsEarned Int
+  metadata     String?  // JSON string for extra context
   completedAt  DateTime @default(now())
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskType])
 }
 

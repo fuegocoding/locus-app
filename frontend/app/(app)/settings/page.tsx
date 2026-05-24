@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, Shield, Volume2, Gauge, ChevronRight } from 'lucide-react'
+import { LogOut, Shield, Volume2, Gauge, Eye } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { authApi } from '@/lib/api'
+import { authApi, settingsApi } from '@/lib/api'
 import { disconnectSocket } from '@/lib/socket'
 import { NeonCard } from '@/components/ui/neon-card'
 import { Badge } from '@/components/ui/badge'
@@ -19,28 +19,57 @@ const PRIVACY_MODES = [
 ] as const
 
 const SPEED_UNITS = [
-  { value: 'default', label: 'Auto (by locale)' },
+  { value: 'auto', label: 'Auto (by locale)' },
   { value: 'kmh', label: 'km/h' },
   { value: 'mph', label: 'mph' },
 ] as const
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, pushToTalk, setPushToTalk, clearAuth } = useAppStore()
+  const { user, settings, setSettings, updateSettings, pushToTalk, setPushToTalk, clearAuth } = useAppStore()
   const [privacyMode, setPrivacyMode] = useState<string>(user?.privacyMode ?? 'open')
-  const [speedUnit, setSpeedUnit] = useState('default')
-  const [saving, setSaving] = useState(false)
+  const [savingField, setSavingField] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch settings on mount
+  useEffect(() => {
+    let mounted = true
+    settingsApi.get()
+      .then((s) => { if (mounted) { setSettings(s); setPushToTalk(s.pushToTalk) } })
+      .catch(() => { /* silently fail, use defaults */ })
+    return () => { mounted = false }
+  }, [setSettings, setPushToTalk])
+
+  async function saveSetting(field: string, data: Partial<Parameters<typeof settingsApi.update>[0]>) {
+    setSavingField(field)
+    setError(null)
+    try {
+      const updated = await settingsApi.update(data)
+      setSettings(updated)
+      if (data.pushToTalk !== undefined) setPushToTalk(data.pushToTalk)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save')
+    } finally {
+      setSavingField(null)
+    }
+  }
 
   async function savePrivacy(mode: string) {
     setPrivacyMode(mode)
-    setSaving(true)
-    try {
-      await authApi.updateProfile({ privacyMode: mode as any })
-    } catch {
-      // fail silently, will retry
-    } finally {
-      setSaving(false)
-    }
+    await saveSetting('privacy', { privacyMode: mode as any })
+  }
+
+  async function handlePushToTalkToggle(enabled: boolean) {
+    setPushToTalk(enabled)
+    await saveSetting('pushToTalk', { pushToTalk: enabled })
+  }
+
+  async function handleSpeedUnitChange(unit: string) {
+    await saveSetting('speedUnit', { speedUnit: unit as any })
+  }
+
+  async function handleAnonymousToggle(enabled: boolean) {
+    await saveSetting('anonymousMode', { anonymousMode: enabled })
   }
 
   async function handleLogout() {
@@ -49,6 +78,9 @@ export default function SettingsPage() {
     clearAuth()
     router.push('/')
   }
+
+  const speedUnit = settings?.speedUnit ?? 'auto'
+  const anonymousMode = settings?.anonymousMode ?? false
 
   return (
     <div className="h-full overflow-y-auto bg-background">
@@ -65,6 +97,12 @@ export default function SettingsPage() {
           {user?.premium && <Badge variant="cyan">Premium</Badge>}
         </NeonCard>
 
+        {error && (
+          <div className="rounded-card border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
         {/* Privacy */}
         <section>
           <SectionHeader icon={<Shield className="w-4 h-4" />} label="Privacy" />
@@ -73,6 +111,7 @@ export default function SettingsPage() {
               <button
                 key={m.value}
                 onClick={() => savePrivacy(m.value)}
+                disabled={savingField === 'privacy'}
                 className={`w-full flex items-center gap-3 p-4 rounded-card border text-left transition-all duration-200 ${
                   privacyMode === m.value
                     ? 'border-primary bg-primary/10 shadow-neon-sm'
@@ -86,12 +125,30 @@ export default function SettingsPage() {
                   <p className="text-sm font-semibold text-foreground">{m.label}</p>
                   <p className="text-xs text-muted">{m.desc}</p>
                 </div>
-                {privacyMode === m.value && saving && (
+                {privacyMode === m.value && savingField === 'privacy' && (
                   <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin flex-shrink-0" />
                 )}
               </button>
             ))}
           </div>
+        </section>
+
+        {/* Anonymous mode */}
+        <section>
+          <SectionHeader icon={<Eye className="w-4 h-4" />} label="Identity" />
+          <NeonCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Anonymous mode</p>
+                <p className="text-xs text-muted">Hide your display name from nearby users</p>
+              </div>
+              <Toggle
+                checked={anonymousMode}
+                onChange={handleAnonymousToggle}
+                disabled={savingField === 'anonymousMode'}
+              />
+            </div>
+          </NeonCard>
         </section>
 
         {/* Audio */}
@@ -103,7 +160,11 @@ export default function SettingsPage() {
                 <p className="text-sm font-semibold text-foreground">Push to Talk</p>
                 <p className="text-xs text-muted">Hold mic button to speak; release to stop</p>
               </div>
-              <Toggle checked={pushToTalk} onChange={setPushToTalk} />
+              <Toggle
+                checked={pushToTalk}
+                onChange={handlePushToTalkToggle}
+                disabled={savingField === 'pushToTalk'}
+              />
             </div>
           </NeonCard>
         </section>
@@ -117,7 +178,8 @@ export default function SettingsPage() {
               {SPEED_UNITS.map((u) => (
                 <button
                   key={u.value}
-                  onClick={() => setSpeedUnit(u.value)}
+                  onClick={() => handleSpeedUnitChange(u.value)}
+                  disabled={savingField === 'speedUnit'}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
                     speedUnit === u.value
                       ? 'bg-primary text-white shadow-neon-sm'
@@ -157,15 +219,16 @@ function SectionHeader({ icon, label }: { icon: React.ReactNode; label: string }
   )
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative w-11 h-6 rounded-full transition-all duration-300 ${
         checked ? 'bg-primary shadow-neon-sm' : 'bg-surface-high border border-border'
-      }`}
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <span
         className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-300 ${

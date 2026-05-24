@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { User, PresenceUpdate, Convoy } from '@/types'
+import type { UserSettings, TasksResponse } from '@/lib/api'
 
 interface AppState {
   // Auth
@@ -26,6 +27,12 @@ interface AppState {
   volumes: Record<string, number>
   speaking: Record<string, boolean>
   remoteVideoEnabled: Record<string, boolean>
+
+  // Settings
+  settings: UserSettings | null
+
+  // Tasks
+  tasks: TasksResponse | null
 
   // UI
   error: string | null
@@ -55,6 +62,14 @@ interface AppState {
   // Actions — video
   setVideoEnabled: (enabled: boolean) => void
   setRemoteVideo: (userId: string, enabled: boolean) => void
+
+  // Actions — settings
+  setSettings: (settings: UserSettings | null) => void
+  updateSettings: (settings: Partial<UserSettings>) => void
+
+  // Actions — tasks
+  setTasks: (tasks: TasksResponse | null) => void
+  updatePoints: (points: number) => void
 
   // Actions — UI
   setError: (error: string | null) => void
@@ -89,6 +104,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   volumes: {},
   speaking: {},
   remoteVideoEnabled: {},
+
+  // Settings
+  settings: null,
+
+  // Tasks
+  tasks: null,
 
   // UI
   error: null,
@@ -140,6 +161,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   setVideoEnabled: (videoEnabled) => set({ videoEnabled }),
   setRemoteVideo: (userId, enabled) =>
     set((state) => ({ remoteVideoEnabled: { ...state.remoteVideoEnabled, [userId]: enabled } })),
+
+  // Settings actions
+  setSettings: (settings) => set({ settings }),
+  updateSettings: (patch) =>
+    set((state) => ({
+      settings: state.settings ? { ...state.settings, ...patch } : null,
+    })),
+
+  // Tasks actions
+  setTasks: (tasks) => set({ tasks }),
+  updatePoints: (points) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, points } : null,
+      tasks: state.tasks ? { ...state.tasks, points } : null,
+    })),
 
   // UI actions
   setError: (error) => set({ error }),

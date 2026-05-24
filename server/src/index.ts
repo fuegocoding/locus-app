@@ -11,6 +11,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth';
 import socialRoutes from './routes/social';
+import settingsRoutes from './routes/settings';
+import taskRoutes from './routes/tasks';
 import { setupSocketHandlers, addConnectedUser } from './socket';
 import { verifyAuthToken } from './services/auth';
 import { cleanupStaleRooms } from './services/proximity';
@@ -91,6 +93,12 @@ app.use('/api/auth', authRoutes);
 
 // Social routes
 app.use('/api/social', socialRoutes);
+
+// Settings routes
+app.use('/api/settings', settingsRoutes);
+
+// Tasks routes
+app.use('/api/tasks', taskRoutes);
 
 // API Status root route
 app.get('/', (_req, res) => {

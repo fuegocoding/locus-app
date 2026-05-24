@@ -68,6 +68,78 @@ export const authApi = {
     }),
 }
 
+// ---------- Settings ----------
+
+export interface UserSettings {
+  speedUnit: 'auto' | 'kmh' | 'mph'
+  pushToTalk: boolean
+  anonymousMode: boolean
+  privacyMode: string
+}
+
+export const settingsApi = {
+  get: () => request<UserSettings>('/settings'),
+  update: (data: Partial<UserSettings>) =>
+    request<UserSettings>('/settings', { method: 'PATCH', body: JSON.stringify(data) }),
+}
+
+// ---------- Tasks ----------
+
+export interface TaskItem {
+  id: string
+  type: 'referral' | 'watch-ad'
+  description: string
+  pointsReward: number
+  repeatable: boolean
+  cooldownHours?: number
+  completed: boolean
+  completedAt: string | null
+}
+
+export interface PremiumFeatureItem {
+  id: string
+  name: string
+  cost: number
+  type: 'cosmetic' | 'functional'
+  icon: string
+  redeemed: boolean
+}
+
+export interface TasksResponse {
+  points: number
+  tasks: TaskItem[]
+  premiumFeatures: PremiumFeatureItem[]
+  redeemedFeatures: { featureId: string; redeemedAt: string; expiresAt: string | null }[]
+}
+
+export interface TaskCompleteResult {
+  success: boolean
+  pointsEarned: number
+  totalPoints: number
+  alreadyCompleted: boolean
+}
+
+export interface RedeemResult {
+  success: boolean
+  featureId: string
+  pointsSpent: number
+  remainingPoints: number
+}
+
+export const tasksApi = {
+  get: () => request<TasksResponse>('/tasks'),
+  complete: (taskType: string, metadata?: Record<string, unknown>) =>
+    request<TaskCompleteResult>('/tasks/complete', {
+      method: 'POST',
+      body: JSON.stringify({ taskType, metadata }),
+    }),
+  redeem: (featureId: string) =>
+    request<RedeemResult>('/tasks/redeem', {
+      method: 'POST',
+      body: JSON.stringify({ featureId }),
+    }),
+}
+
 // ---------- Convoy ----------
 
 export const convoyApi = {
