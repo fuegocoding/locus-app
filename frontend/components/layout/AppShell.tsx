@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* ── Header ── */}
-      <header className="glass border-b border-border flex items-center justify-between px-6 py-3 flex-shrink-0 z-40">
+      <header className="glass border-b border-border flex items-center justify-between px-6 h-14 flex-shrink-0 z-40">
         {/* Logo → back to landing */}
         <Link href="/" className="flex items-center gap-2 group">
           <Logo className="w-7 h-7 text-primary transition-transform duration-200 group-hover:scale-105" />
