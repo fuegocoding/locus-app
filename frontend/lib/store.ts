@@ -74,6 +74,7 @@ interface AppState {
   // Actions — UI
   setError: (error: string | null) => void
   setLoading: (loading: boolean) => void
+  clearError: () => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -180,4 +181,5 @@ export const useAppStore = create<AppState>((set, get) => ({
   // UI actions
   setError: (error) => set({ error }),
   setLoading: (isLoading) => set({ isLoading }),
+  clearError: () => set({ error: null }),
 }))

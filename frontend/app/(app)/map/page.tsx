@@ -125,26 +125,34 @@ function MapSkeleton() {
 }
 
 function ConvoyQuickModal({ onClose }: { onClose: () => void }) {
-  const { mode } = useAppStore()
+  const { mode, error, clearError } = useAppStore()
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [tab, setTab] = useState<'create' | 'join'>('create')
 
+  useEffect(() => {
+    if (mode === 'convoy') onClose()
+  }, [mode, onClose])
+
   function create() {
     if (!name.trim()) return
     socketActions.createConvoy(name.trim())
-    onClose()
   }
 
   function join() {
     if (!code.trim()) return
+    clearError()
     socketActions.joinConvoy(code.trim().toUpperCase())
-    onClose()
   }
 
   function leave() {
     socketActions.leaveConvoy()
     onClose()
+  }
+
+  function switchTab(t: 'create' | 'join') {
+    setTab(t)
+    clearError()
   }
 
   return (
@@ -172,7 +180,7 @@ function ConvoyQuickModal({ onClose }: { onClose: () => void }) {
                       ? 'bg-primary text-white shadow-neon-sm'
                       : 'bg-surface text-muted hover:text-foreground'
                   }`}
-                  onClick={() => setTab(t)}
+                  onClick={() => switchTab(t)}
                 >
                   {t === 'create' ? 'Create' : 'Join with code'}
                 </button>
@@ -196,13 +204,19 @@ function ConvoyQuickModal({ onClose }: { onClose: () => void }) {
             ) : (
               <div className="space-y-3">
                 <input
-                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted outline-none focus:border-primary focus:shadow-neon-sm transition-all font-mono text-lg tracking-widest uppercase"
+                  className={`w-full bg-surface border rounded-xl px-4 py-3 text-foreground placeholder:text-muted outline-none focus:shadow-neon-sm transition-all font-mono text-lg tracking-widest uppercase ${
+                    error ? 'border-error focus:border-error' : 'border-border focus:border-primary'
+                  }`}
                   placeholder="ABC123"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 6))}
+                  onChange={(e) => {
+                    setCode(e.target.value.toUpperCase().slice(0, 6))
+                    clearError()
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && join()}
                   maxLength={6}
                 />
+                {error && <p className="text-sm text-error">{error}</p>}
                 <Button className="w-full" onClick={join} disabled={code.length < 6}>
                   Join Convoy
                 </Button>
