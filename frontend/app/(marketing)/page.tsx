@@ -11,11 +11,6 @@ export default function LandingPage() {
       {/* ─────────────────── HERO ─────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center grid-bg noise-overlay pt-20 border-b border-border/40">
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          {/* Badge */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Badge variant="default">Proximity Audio Network</Badge>
-          </div>
-
           {/* Headline */}
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight text-foreground">
             Talk to{' '}
