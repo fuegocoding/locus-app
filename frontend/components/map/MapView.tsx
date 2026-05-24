@@ -2,7 +2,6 @@
 
 import { useRef, useCallback, useState } from 'react'
 import Map, { Marker, Source, Layer, NavigationControl, type MapRef } from 'react-map-gl/maplibre'
-import 'maplibre-gl/dist/maplibre-gl.css'
 import { useAppStore } from '@/lib/store'
 import { getInitials } from '@/lib/utils'
 import type { PresenceUpdate } from '@/types'
@@ -63,6 +62,8 @@ export function MapView({ onUserClick }: MapViewProps) {
       style={{ width: '100%', height: '100%' }}
       attributionControl={false}
       onMoveEnd={handleMoveEnd}
+      onError={(e) => console.error('Map error:', e)}
+      onLoad={() => console.log('Map loaded')}
     >
       {/* Compass */}
       <NavigationControl position="bottom-right" showZoom={false} />

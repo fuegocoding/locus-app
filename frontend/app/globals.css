@@ -191,6 +191,17 @@ body {
   outline: none;
 }
 
+/* Ensure map fills container even if CSS import fails */
+.maplibregl-map {
+  width: 100%;
+  height: 100%;
+}
+
+.maplibregl-canvas-container {
+  width: 100%;
+  height: 100%;
+}
+
 /* Input focus ring */
 .focus-ring {
   outline: none;
