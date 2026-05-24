@@ -48,10 +48,10 @@ export const authApi = {
     }),
 
   me: () =>
-    request<{ id: string; displayName: string; points: number; premium: boolean; privacyMode: string }>('/auth/me'),
+    request<{ id: string; displayName: string; avatar?: string; points: number; premium: boolean; privacyMode: string }>('/auth/me'),
 
-  updateProfile: (data: { displayName?: string; privacyMode?: string; vehicleTag?: string }) =>
-    request<{ displayName: string }>('/auth/me', {
+  updateProfile: (data: { displayName?: string; privacyMode?: string; vehicleTag?: string; avatar?: string }) =>
+    request<{ displayName: string; avatar?: string }>('/auth/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),

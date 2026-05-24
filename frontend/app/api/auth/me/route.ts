@@ -26,6 +26,7 @@ const updateSchema = z.object({
   displayName: z.string().min(2).max(30).optional(),
   privacyMode: z.enum(['open', 'friends-only', 'convoy-only', 'invisible']).optional(),
   vehicleTag: z.string().max(20).optional(),
+  avatar: z.string().max(400_000).optional(), // base64 JPEG, max ~300KB
 })
 
 export async function PATCH(req: NextRequest) {
@@ -49,6 +50,7 @@ export async function PATCH(req: NextRequest) {
   if (parsed.data.displayName) clean.displayName = sanitizeString(parsed.data.displayName, 30)
   if (parsed.data.privacyMode) clean.privacyMode = parsed.data.privacyMode
   if (parsed.data.vehicleTag) clean.vehicleTag = sanitizeString(parsed.data.vehicleTag, 20)
+  if (parsed.data.avatar) clean.avatar = parsed.data.avatar
 
   const backendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
     method: 'PATCH',

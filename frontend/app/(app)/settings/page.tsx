@@ -133,8 +133,8 @@ export default function SettingsPage() {
     setAvatarError(null)
     try {
       const base64 = await resizeToBase64(file)
-      const updated = await authApi.updateProfile({ avatar: base64 } as any)
-      setUser({ ...user!, avatar: (updated as any).avatar ?? base64 })
+      const updated = await authApi.updateProfile({ avatar: base64 })
+      setUser({ ...user!, avatar: updated.avatar ?? base64 })
     } catch (err: any) {
       setAvatarError(err?.message || 'Failed to upload photo')
     } finally {
