@@ -1,26 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Shield, Volume2, Gauge, Eye, Pencil, Check, X, Smartphone } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Shield, Volume2, Gauge, Eye, Pencil, Check, X, Smartphone, Camera, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { authApi, settingsApi } from '@/lib/api'
 import { NeonCard } from '@/components/ui/neon-card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
 
 const APK_URL = 'https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk'
-
-const AVATAR_COLORS = [
-  '#7C6FFF', // primary
-  '#00E5FF', // cyan
-  '#00FF87', // proximity/green
-  '#4488FF', // convoy/blue
-  '#FF4466', // red
-  '#FFAA00', // amber
-  '#FF6EC7', // pink
-  '#A78BFA', // violet
-]
 
 const PRIVACY_MODES = [
   { value: 'open', label: 'Open', desc: 'Anyone nearby can see and hear you' },
@@ -35,11 +23,27 @@ const SPEED_UNITS = [
   { value: 'mph', label: 'mph' },
 ] as const
 
-const AVATAR_COLOR_KEY = 'locus_avatar_color'
-
-function getAvatarColor(): string {
-  if (typeof window === 'undefined') return AVATAR_COLORS[0]
-  return localStorage.getItem(AVATAR_COLOR_KEY) ?? AVATAR_COLORS[0]
+/** Resize an image File to 256×256 JPEG and return a base64 data URL. */
+function resizeToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      canvas.width = 256
+      canvas.height = 256
+      const ctx = canvas.getContext('2d')!
+      // Crop to square from center
+      const size = Math.min(img.width, img.height)
+      const sx = (img.width - size) / 2
+      const sy = (img.height - size) / 2
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 256, 256)
+      resolve(canvas.toDataURL('image/jpeg', 0.8))
+    }
+    img.onerror = reject
+    img.src = url
+  })
 }
 
 export default function SettingsPage() {
@@ -47,21 +51,17 @@ export default function SettingsPage() {
   const [savingField, setSavingField] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Name editing state
+  // Name editing
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
   const [savingName, setSavingName] = useState(false)
 
-  // Avatar color state
-  const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0])
-  const [showColorPicker, setShowColorPicker] = useState(false)
+  // Avatar upload
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
 
-  useEffect(() => {
-    setAvatarColor(getAvatarColor())
-  }, [])
-
-  // Fetch settings on mount
   useEffect(() => {
     let mounted = true
     settingsApi.get()
@@ -123,15 +123,31 @@ export default function SettingsPage() {
     }
   }
 
-  function pickAvatarColor(color: string) {
-    setAvatarColor(color)
-    localStorage.setItem(AVATAR_COLOR_KEY, color)
-    setShowColorPicker(false)
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setAvatarError('Please select an image file'); return }
+    if (file.size > 10 * 1024 * 1024) { setAvatarError('Image must be under 10 MB'); return }
+
+    setUploadingAvatar(true)
+    setAvatarError(null)
+    try {
+      const base64 = await resizeToBase64(file)
+      const updated = await authApi.updateProfile({ avatar: base64 } as any)
+      setUser({ ...user!, avatar: (updated as any).avatar ?? base64 })
+    } catch (err: any) {
+      setAvatarError(err?.message || 'Failed to upload photo')
+    } finally {
+      setUploadingAvatar(false)
+      // Reset input so same file can be re-selected
+      e.target.value = ''
+    }
   }
 
   const privacyMode = settings?.privacyMode ?? user?.privacyMode ?? 'open'
   const speedUnit = settings?.speedUnit ?? 'auto'
   const anonymousMode = settings?.anonymousMode ?? false
+  const avatarSrc = user?.avatar ?? null
 
   return (
     <div className="h-full overflow-y-auto bg-background">
@@ -140,39 +156,37 @@ export default function SettingsPage() {
         {/* ── Profile card ── */}
         <NeonCard glow="primary">
           <div className="flex items-center gap-4">
-            {/* Avatar */}
+            {/* Avatar with upload overlay */}
             <div className="relative flex-shrink-0">
               <button
-                onClick={() => setShowColorPicker((v) => !v)}
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-xl shadow-neon border-2 border-white/10 hover:border-white/30 transition-all"
-                style={{ background: avatarColor }}
-                title="Change avatar color"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-white/10 hover:border-primary/60 transition-all group"
+                title="Change profile photo"
               >
-                {user ? getInitials(user.displayName) : '?'}
-              </button>
-              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-surface-raised border border-border flex items-center justify-center pointer-events-none">
-                <Pencil className="w-2.5 h-2.5 text-muted" />
-              </div>
-
-              {/* Color picker popover */}
-              {showColorPicker && (
-                <div className="absolute top-full left-0 mt-2 glass-bright rounded-xl p-3 z-10 shadow-card">
-                  <p className="text-[10px] text-muted uppercase tracking-wider mb-2">Avatar color</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {AVATAR_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => pickAvatarColor(c)}
-                        className="w-8 h-8 rounded-full border-2 transition-all hover:scale-110"
-                        style={{
-                          background: c,
-                          borderColor: c === avatarColor ? 'white' : 'transparent',
-                        }}
-                      />
-                    ))}
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-primary/20 flex items-center justify-center text-primary font-black text-xl">
+                    {user ? getInitials(user.displayName) : '?'}
                   </div>
+                )}
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploadingAvatar
+                    ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    : <Camera className="w-5 h-5 text-white" />
+                  }
                 </div>
-              )}
+              </button>
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarFile}
+              />
             </div>
 
             {/* Name + edit */}
@@ -206,6 +220,7 @@ export default function SettingsPage() {
                 </div>
               )}
               {nameError && <p className="text-xs text-error mt-1">{nameError}</p>}
+              {avatarError && <p className="text-xs text-error mt-1">{avatarError}</p>}
               <p className="text-xs text-muted mt-0.5">{user?.points ?? 0} pts · {user?.premium ? 'Premium' : 'Free'}</p>
             </div>
 
@@ -230,7 +245,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">Get the Locus app</p>
-              <p className="text-xs text-muted">Map, proximity voice & convoy — Android APK</p>
+              <p className="text-xs text-muted">Map, proximity voice &amp; convoy — Android APK</p>
             </div>
             <span className="text-xs text-primary font-semibold flex-shrink-0 group-hover:underline">Download ↓</span>
           </div>
@@ -326,7 +341,6 @@ export default function SettingsPage() {
           </NeonCard>
         </section>
 
-        {/* bottom padding */}
         <div className="h-2" />
       </div>
     </div>

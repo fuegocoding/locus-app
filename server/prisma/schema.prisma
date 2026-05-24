@@ -10,6 +10,7 @@ model User {
   id               String             @id
   phone            String             @unique
   displayName      String             @unique
+  avatar           String?
   privacyMode      String             @default("open")
   anonymousMode    Boolean            @default(false)
   points           Int                @default(0)
