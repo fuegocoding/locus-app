@@ -26,8 +26,7 @@ const SPEED_UNITS = [
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, settings, setSettings, updateSettings, pushToTalk, setPushToTalk, clearAuth } = useAppStore()
-  const [privacyMode, setPrivacyMode] = useState<string>(user?.privacyMode ?? 'open')
+  const { user, setUser, settings, setSettings, pushToTalk, setPushToTalk, clearAuth } = useAppStore()
   const [savingField, setSavingField] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,10 +34,18 @@ export default function SettingsPage() {
   useEffect(() => {
     let mounted = true
     settingsApi.get()
-      .then((s) => { if (mounted) { setSettings(s); setPushToTalk(s.pushToTalk) } })
+      .then((s) => {
+        if (!mounted) return
+        setSettings(s)
+        setPushToTalk(s.pushToTalk)
+        // Sync privacyMode back into user object so auth state stays fresh
+        if (s.privacyMode && user && user.privacyMode !== s.privacyMode) {
+          setUser({ ...user, privacyMode: s.privacyMode })
+        }
+      })
       .catch(() => { /* silently fail, use defaults */ })
     return () => { mounted = false }
-  }, [setSettings, setPushToTalk])
+  }, [setSettings, setPushToTalk, setUser, user])
 
   async function saveSetting(field: string, data: Partial<Parameters<typeof settingsApi.update>[0]>) {
     setSavingField(field)
@@ -47,6 +54,9 @@ export default function SettingsPage() {
       const updated = await settingsApi.update(data)
       setSettings(updated)
       if (data.pushToTalk !== undefined) setPushToTalk(data.pushToTalk)
+      if (data.privacyMode !== undefined && user) {
+        setUser({ ...user, privacyMode: data.privacyMode })
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to save')
     } finally {
@@ -55,7 +65,6 @@ export default function SettingsPage() {
   }
 
   async function savePrivacy(mode: string) {
-    setPrivacyMode(mode)
     await saveSetting('privacy', { privacyMode: mode as any })
   }
 
@@ -79,6 +88,8 @@ export default function SettingsPage() {
     router.push('/')
   }
 
+  // Derive all settings from store so they survive reloads
+  const privacyMode = settings?.privacyMode ?? user?.privacyMode ?? 'open'
   const speedUnit = settings?.speedUnit ?? 'auto'
   const anonymousMode = settings?.anonymousMode ?? false
 

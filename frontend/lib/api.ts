@@ -3,6 +3,8 @@
  * All auth calls go through /api/auth/* — never directly to the backend from the client.
  */
 
+import type { PrivacyMode } from '@/types'
+
 const BASE = '/api'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -74,7 +76,7 @@ export interface UserSettings {
   speedUnit: 'auto' | 'kmh' | 'mph'
   pushToTalk: boolean
   anonymousMode: boolean
-  privacyMode: string
+  privacyMode: PrivacyMode
 }
 
 export const settingsApi = {
