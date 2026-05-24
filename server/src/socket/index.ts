@@ -292,6 +292,11 @@ export function setupSocketHandlers(io: TypedServer): void {
         }
       }
 
+      const remainingMembers = await redis.getConvoyMembers(convoyId);
+      if (remainingMembers.length === 0) {
+        await redis.deleteConvoy(convoyId);
+      }
+
       await handleProximityUpdate(socket, user, io);
     });
 
@@ -566,6 +571,11 @@ async function handleDisconnect(
         io.to(sid).emit('presence:remove', { userId: user.userId });
         io.to(sid).emit('convoy:member-left', { userId: user.userId });
       }
+    }
+
+    const remainingMembers = await redis.getConvoyMembers(user.convoyId);
+    if (remainingMembers.length === 0) {
+      await redis.deleteConvoy(user.convoyId);
     }
   }
 }
