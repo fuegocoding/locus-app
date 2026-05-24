@@ -8,6 +8,7 @@ import { useAppStore } from '@/lib/store'
 import { authApi } from '@/lib/api'
 import { disconnectSocket } from '@/lib/socket'
 import { AdSlot } from '@/components/ui/AdSlot'
+import { Logo } from '@/components/ui/logo'
 
 const APK_URL = 'https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk'
 
@@ -34,10 +35,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="glass border-b border-border flex items-center justify-between px-4 py-2.5 flex-shrink-0 z-40">
         {/* Logo → back to landing */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-neon-sm group-hover:shadow-neon transition-shadow">
-            <span className="text-white font-black text-sm">L</span>
-          </div>
-          <span className="font-bold text-foreground text-sm">Locus</span>
+          <Logo className="w-7 h-7 text-primary transition-transform duration-200 group-hover:scale-105" />
+          <span className="text-lg font-bold text-foreground tracking-tight">Locus</span>
         </Link>
 
         {/* Right actions */}
