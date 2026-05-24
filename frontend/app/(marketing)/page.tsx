@@ -9,7 +9,7 @@ export default function LandingPage() {
     <main className="relative overflow-hidden bg-background">
 
       {/* ─────────────────── HERO ─────────────────── */}
-      <section className="relative flex flex-col items-center justify-center grid-bg noise-overlay pt-20 pb-14 border-b border-border/40">
+      <section className="relative flex flex-col items-center justify-center grid-bg noise-overlay pt-[120px] pb-14 border-b border-border/40">
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
           {/* Headline */}
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight text-foreground">
