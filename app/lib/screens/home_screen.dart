@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          MapWidget(key: _mapKey),
+          Positioned.fill(child: MapWidget(key: _mapKey)),
 
           // ── Top bar ─────────────────────────────────────────────────────
           Positioned(

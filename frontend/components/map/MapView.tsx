@@ -2,6 +2,7 @@
 
 import { useRef, useCallback, useState } from 'react'
 import Map, { Marker, Source, Layer, NavigationControl, type MapRef } from 'react-map-gl/maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { useAppStore } from '@/lib/store'
 import { getInitials } from '@/lib/utils'
 import type { PresenceUpdate } from '@/types'
