@@ -7,7 +7,6 @@ import { useAppStore } from '@/lib/store'
 import { socketActions } from '@/lib/socket'
 import { TopBar } from '@/components/layout/TopBar'
 import { MicButton } from '@/components/audio/MicButton'
-import { ProximityOverlay } from '@/components/proximity/ProximityOverlay'
 import { ConvoyPanel } from '@/components/convoy/ConvoyPanel'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { Button } from '@/components/ui/button'
@@ -56,7 +55,6 @@ export default function MapPage() {
       <TopBar />
 
       {/* ── Mode overlays ── */}
-      {mode === 'proximity' && <ProximityOverlay />}
       {mode === 'convoy' && (
         <>
           <ConvoyPanel />
