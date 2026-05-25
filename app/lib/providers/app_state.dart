@@ -104,8 +104,9 @@ class AppState extends ChangeNotifier {
     await apiService.loadToken();
     final prefs = await SharedPreferences.getInstance();
 
-    OverlayService.init();
+    // OverlayService is Android-only; safe to silently fail on other platforms
     try {
+      OverlayService.init();
       OverlayService.micToggledStream.listen((muted) {
         if (_micMuted != muted) {
           _micMuted = muted;
