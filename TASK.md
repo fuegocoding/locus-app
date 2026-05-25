@@ -82,24 +82,17 @@
 - [x] Applied purple theme to convoy panel, video grid, home screen mode indicator and Live badge
 
 ## 🧹 Backlog
-- [ ] **Map profile pictures** — Show other users as their profile picture on the map (only within radius). Friends visible anytime, anywhere. Clicking a user's pfp shows a popup with their address and a Directions button that opens the default maps app.
-  - Update `PresenceUpdate` types (frontend + Redis) to include `displayName`, `avatar`, `anonymousMode`
-  - Store/retrieve avatar in Redis presence data
-  - Socket handler: include avatar in presence broadcasts and `friends:location` events
-  - Frontend store: track `friendLocations` with `friends:location` socket listener
-  - `MapView` component: render profile pics, friend markers (always visible, distinct style), click handler
-  - New `UserPopup` component: reverse geocode address, Directions → open default maps app via `maps:` / Google Maps URL
 - [x] Onboarding validation errors (phone, username) should only appear after the user clicks Continue, not while typing. Prevent submission instead of interrupting with live errors.
 - [x] See friends on map with distinct green markers
 - [x] Reciprocal pin notification (banner when someone pins you, with Pin back button)
 - [x] Relocate button — recenter map on user's location when they've panned away
 - [x] Build a marketing landing page at `/` with hero, features grid, CTA links
-- [ ] Implement link sharing and referral flow (earn points for invites)
-- [ ] Android overlay feature (pop-up/bubble like Messenger) for quick voice access while using other apps
-- [ ] QR code friends — scan personal QR to add friends
-  - [ ] Personal QR code on profile/settings (others scan to add you)
-  - [ ] QR code reader in Find People screen (share + scan buttons below search bar)
-  - [ ] Also accessible from the existing Share button in the top bar
+- [x] Implement link sharing and referral flow (earn points for invites)
+- [x] Android overlay feature (pop-up/bubble like Messenger) for quick voice access while using other apps
+- [x] QR code friends — scan personal QR to add friends
+  - [x] Personal QR code on profile/settings (others scan to add you)
+  - [x] QR code reader in Find People screen (share + scan buttons below search bar)
+  - [x] Also accessible from the existing Share button in the top bar
 
 ## 🚀 Future Roadmap
 ### Profile & Identity
