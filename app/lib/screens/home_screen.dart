@@ -144,9 +144,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.92),
+        color: const Color(0xFF1A1A3E),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
+        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.4), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 12, offset: const Offset(0, 2)),
+        ],
       ),
       child: Row(
         children: [
@@ -240,9 +243,9 @@ class _HomeScreenState extends State<HomeScreen> {
         height: _barHeight,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A3E).withOpacity(0.72),
+          color: const Color(0xFF1C1C40),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.18), width: 1),
+          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.35), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.4),

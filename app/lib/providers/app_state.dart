@@ -279,6 +279,8 @@ class AppState extends ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _friendLocSub;
   StreamSubscription<Map<String, dynamic>>? _pinnedSub;
   StreamSubscription<Map<String, dynamic>>? _inviteSub;
+  StreamSubscription<Map<String, double>>? _positionSub;
+  DateTime _lastPositionNotify = DateTime(2000);
 
   void _connectSocket() {
     socketService.disconnect();
@@ -454,7 +456,8 @@ class AppState extends ChangeNotifier {
       }
     });
 
-    locationService.positionStream.listen((p) {
+    _positionSub?.cancel();
+    _positionSub = locationService.positionStream.listen((p) {
       _latitude = p['latitude']!;
       _longitude = p['longitude']!;
       _speed = p['speed']!;
@@ -469,11 +472,20 @@ class AppState extends ChangeNotifier {
         prefs.setDouble('last_latitude', _latitude);
         prefs.setDouble('last_longitude', _longitude);
       });
-      notifyListeners();
+      // Throttle rebuilds from GPS updates to at most 1 per 2 seconds
+      final now = DateTime.now();
+      if (now.difference(_lastPositionNotify).inMilliseconds > 2000) {
+        _lastPositionNotify = now;
+        notifyListeners();
+      }
     });
   }
 
-  void stopLocation() => locationService.stopLocationUpdates();
+  void stopLocation() {
+    _positionSub?.cancel();
+    _positionSub = null;
+    locationService.stopLocationUpdates();
+  }
 
   Future<void> startBackgroundService() async {
     await locationService.startBackgroundService();

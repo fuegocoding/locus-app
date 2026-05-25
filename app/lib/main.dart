@@ -149,33 +149,8 @@ class _AppEntryState extends State<AppEntry> {
       }
 
       debugPrint('APPSTATE: isAuthenticated=${state.isAuthenticated}, hasProfile=${state.hasProfile}, error=${state.error}');
-      if (!state.isAuthenticated) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Screen: Onboarding'), duration: Duration(seconds: 1), backgroundColor: Color(0xFF161B22)),
-            );
-          }
-        });
-        return const OnboardingScreen();
-      }
-      if (!state.hasProfile) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Screen: ProfileSetup — user=${state.user?.displayName}'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF161B22)),
-            );
-          }
-        });
-        return const ProfileSetupScreen();
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Screen: HomeScreen'), duration: Duration(seconds: 1), backgroundColor: Color(0xFF161B22)),
-          );
-        }
-      });
+      if (!state.isAuthenticated) return const OnboardingScreen();
+      if (!state.hasProfile) return const ProfileSetupScreen();
       return const HomeScreen();
     });
   }
