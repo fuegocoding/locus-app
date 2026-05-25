@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+// Temporarily disabled while debugging auth flow
+// import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QrScanScreen extends StatefulWidget {
   const QrScanScreen({super.key});
@@ -9,7 +10,7 @@ class QrScanScreen extends StatefulWidget {
 }
 
 class _QrScanScreenState extends State<QrScanScreen> with WidgetsBindingObserver {
-  final MobileScannerController _controller = MobileScannerController();
+  // final MobileScannerController _controller = MobileScannerController();
   bool _hasScanned = false;
   bool _torchOn = false;
 
@@ -22,7 +23,7 @@ class _QrScanScreenState extends State<QrScanScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _controller.dispose();
+    // _controller.dispose();
     super.dispose();
   }
 
@@ -33,16 +34,7 @@ class _QrScanScreenState extends State<QrScanScreen> with WidgetsBindingObserver
     }
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (_hasScanned) return;
-    final barcode = capture.barcodes.firstOrNull;
-    if (barcode?.rawValue == null) return;
-
-    final value = barcode!.rawValue!;
-    _hasScanned = true;
-
-    Navigator.pop(context, value);
-  }
+  // void _onDetect(BarcodeCapture capture) { ... }
 
   @override
   Widget build(BuildContext context) {
@@ -58,50 +50,19 @@ class _QrScanScreenState extends State<QrScanScreen> with WidgetsBindingObserver
         title: const Text('Scan QR Code',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _torchOn ? Icons.flash_on : Icons.flash_off,
-              color: Colors.white70,
-            ),
-            onPressed: () {
-              _controller.toggleTorch();
-              setState(() => _torchOn = !_torchOn);
-            },
-          ),
-        ],
       ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 260,
-                  height: 260,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFC4B5FD), width: 2.5),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                const Text(
-                  'Point camera at a Locus QR code',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+      body: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.qr_code_scanner, color: Colors.white24, size: 64),
+            SizedBox(height: 16),
+            Text(
+              'QR scanner coming soon',
+              style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
