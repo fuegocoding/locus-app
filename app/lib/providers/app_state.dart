@@ -105,14 +105,18 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     OverlayService.init();
-    OverlayService.micToggledStream.listen((muted) {
-      if (_micMuted != muted) {
-        _micMuted = muted;
-        socketService.toggleMic(_micMuted);
-        audioService.setMuted(_micMuted);
-        notifyListeners();
-      }
-    });
+    try {
+      OverlayService.micToggledStream.listen((muted) {
+        if (_micMuted != muted) {
+          _micMuted = muted;
+          socketService.toggleMic(_micMuted);
+          audioService.setMuted(_micMuted);
+          notifyListeners();
+        }
+      });
+    } catch (_) {
+      // Overlay not available on this platform
+    }
 
     // Load last cached coordinates immediately to prevent New York map jump
     final lastLat = prefs.getDouble('last_latitude');
