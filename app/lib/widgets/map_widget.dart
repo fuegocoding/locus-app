@@ -30,10 +30,13 @@ class MapWidgetState extends State<MapWidget> {
 
   void _followIfNeeded(AppState state) {
     if (followingUser && state.latitude != 0 && state.longitude != 0) {
+      debugPrint('MAPWIDGET: _followIfNeeded moving to ${state.latitude}, ${state.longitude}');
       _mapController.move(
         LatLng(state.latitude, state.longitude),
         _mapController.camera.zoom,
       );
+    } else {
+      debugPrint('MAPWIDGET: _followIfNeeded skipped: followingUser=$followingUser, lat=${state.latitude}, lng=${state.longitude}');
     }
   }
 
@@ -53,6 +56,7 @@ class MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('MAPWIDGET: build() start');
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
 
@@ -60,7 +64,12 @@ class MapWidgetState extends State<MapWidget> {
         ? LatLng(state.latitude, state.longitude)
         : const LatLng(40.7128, -74.0060);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _followIfNeeded(state));
+    debugPrint('MAPWIDGET: userLocation=$userLocation, followingUser=$followingUser');
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('MAPWIDGET: addPostFrameCallback triggering _followIfNeeded');
+      _followIfNeeded(state);
+    });
 
     return Stack(
       children: [

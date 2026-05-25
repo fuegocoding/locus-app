@@ -35,10 +35,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (v.isEmpty) return null; // don't nag before typing
     if (v.length < 2) return 'Username must be at least 2 characters';
     if (v.length > 30) return 'Username must be 30 characters or fewer';
-    if (!RegExp(r'^[a-zA-Z0-9_.\-]+$').hasMatch(v)) {
-      return 'Only letters, numbers, _, . and - are allowed';
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v)) {
+      return 'Only letters, numbers, and underscores are allowed';
     }
-    if (v.startsWith('.') || v.startsWith('-') || v.startsWith('_')) {
+    if (v.startsWith('_')) {
       return 'Username cannot start with a symbol';
     }
     return null;
@@ -222,7 +222,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 focusNode: _focusNode,
                 maxLength: 30,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_.\-]')),
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
                 ],
                 style: const TextStyle(color: Colors.white, fontSize: 17),
                 onChanged: _onChanged,
@@ -281,7 +281,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ),
                       SizedBox(height: 6),
                       _RuleRow('2–30 characters'),
-                      _RuleRow('Letters, numbers, _, . and -'),
+                      _RuleRow('Letters, numbers, and underscores'),
                       _RuleRow('Must not start with a symbol'),
                       _RuleRow('Must be unique'),
                     ],

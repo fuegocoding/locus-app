@@ -186,10 +186,19 @@ class AppState extends ChangeNotifier {
     try {
       final r = await apiService.verifyCode(phone, code, referralUsername: referralUsername);
       if (r['token'] != null) {
+        try {
+          final p = await apiService.getProfile();
+          if (p != null) _user = User.fromJson(p);
+        } catch (profileError) {
+          _error = 'Verification failed';
+          _isAuthenticated = false;
+          _user = null;
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
         _isAuthenticated = true;
         _error = null;
-        final p = await apiService.getProfile();
-        if (p != null) _user = User.fromJson(p);
         _connectSocket();
         initPushNotifications();
         loadFriends();
@@ -199,6 +208,8 @@ class AppState extends ChangeNotifier {
       _error = r['error'] ?? 'Invalid code';
     } catch (e) {
       _error = 'Verification failed';
+      _isAuthenticated = false;
+      _user = null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -270,6 +281,7 @@ class AppState extends ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _inviteSub;
 
   void _connectSocket() {
+    socketService.disconnect();
     socketService.connect(apiService.baseUrl, apiService.authToken ?? '');
     _startFriendLocationPolling();
 

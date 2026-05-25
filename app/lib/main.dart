@@ -12,11 +12,19 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   ErrorWidget.builder = (details) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Material(
-        color: const Color(0xFF0D1117),
-        child: Center(
+    debugPrint('FLUTTER CRASH: ${details.exceptionAsString()}\n${details.stack}');
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xFF0D1117),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C63FF),
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0D1117),
+        body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -26,13 +34,42 @@ void main() {
                 const SizedBox(height: 16),
                 const Text(
                   'Something went wrong',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'sans-serif'),
+                  style: TextStyle(
+                    color: Color(0xFFEF4444),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.none,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Text(
                   details.exceptionAsString(),
-                  style: const TextStyle(color: Colors.white54, fontSize: 12, fontFamily: 'sans-serif'),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    decoration: TextDecoration.none,
+                  ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    // Force restart by rebuilding from scratch
+                    runApp(
+                      ChangeNotifierProvider(
+                        create: (_) => AppState(),
+                        child: const LocusApp(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6C63FF),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Restart App'),
                 ),
               ],
             ),
@@ -132,6 +169,7 @@ class _AppEntryState extends State<AppEntry> {
         });
       }
 
+      debugPrint('APPSTATE: isAuthenticated=${state.isAuthenticated}, hasProfile=${state.hasProfile}, error=${state.error}');
       if (!state.isAuthenticated) return const OnboardingScreen();
       if (!state.hasProfile) return const ProfileSetupScreen();
       return const HomeScreen();

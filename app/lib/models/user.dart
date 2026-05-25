@@ -81,15 +81,15 @@ class PresenceUpdate {
 
   factory PresenceUpdate.fromJson(Map<String, dynamic> json) {
     return PresenceUpdate(
-      userId: json['userId'],
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      speed: (json['speed'] as num).toDouble(),
-      heading: (json['heading'] as num).toDouble(),
-      privacyMode: json['privacyMode'],
-      mode: json['mode'],
+      userId: json['userId'] ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      speed: (json['speed'] as num?)?.toDouble() ?? 0.0,
+      heading: (json['heading'] as num?)?.toDouble() ?? 0.0,
+      privacyMode: json['privacyMode'] ?? 'open',
+      mode: json['mode'] ?? 'proximity',
       convoyId: json['convoyId'],
-      timestamp: json['timestamp'],
+      timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
       displayName: json['displayName'],
       anonymousMode: json['anonymousMode'],
     );
