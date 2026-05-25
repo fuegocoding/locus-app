@@ -274,6 +274,8 @@ export function setupSocketHandlers(io: TypedServer): void {
             privacyMode: 'open',
             mode: 'convoy',
             convoyId: foundConvoy.id,
+            displayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
+            anonymousMode: user.anonymousMode,
             timestamp: Date.now(),
           });
         }
@@ -505,9 +507,9 @@ async function handleProximityUpdate(
   user: ConnectedUser,
   io: TypedServer
 ): Promise<void> {
-  const radius = proximity.computeDynamicRadius(0);
-  const nearbyUsers = await redis.getNearbyUsers(user.latitude, user.longitude, radius, [user.userId]);
+  const nearbyUsers = await redis.getNearbyUsers(user.latitude, user.longitude, 5.0, [user.userId]);
   const pinnedUsers = await redis.getPins(user.userId);
+  const radius = proximity.computeDynamicRadius(nearbyUsers.length);
 
   const { roomId, isNew } = proximity.assignProximityRoom(
     user.userId,
@@ -586,6 +588,8 @@ async function handleConvoyPresenceBroadcast(
         privacyMode: 'open',
         mode: 'convoy',
         convoyId: user.convoyId,
+        displayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
+        anonymousMode: user.anonymousMode,
         timestamp: Date.now(),
       });
     }

@@ -163,12 +163,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> verifyCode(String phone, String code) async {
+  Future<bool> verifyCode(String phone, String code, {String? referralUsername}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      final r = await apiService.verifyCode(phone, code);
+      final r = await apiService.verifyCode(phone, code, referralUsername: referralUsername);
       if (r['token'] != null) {
         _isAuthenticated = true;
         final p = await apiService.getProfile();

@@ -88,6 +88,7 @@
 - [x] Relocate button — recenter map on user's location when they've panned away
 - [x] Build a marketing landing page at `/` with hero, features grid, CTA links
 - [ ] Implement link sharing and referral flow (earn points for invites)
+- [ ] Android overlay feature (pop-up/bubble like Messenger) for quick voice access while using other apps
 - [ ] QR code friends — scan personal QR to add friends
   - [ ] Personal QR code on profile/settings (others scan to add you)
   - [ ] QR code reader in Find People screen (share + scan buttons below search bar)

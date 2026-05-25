@@ -697,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: const TextStyle(color: Color(0xFFC4B5FD)),
         ),
       ),
-      title: Text('User ${user.userId.substring(0, 6)}',
+      title: Text(user.displayName ?? 'User ${user.userId.substring(0, 6)}',
           style: const TextStyle(color: Colors.white)),
       subtitle: Text(
         '${user.latitude.toStringAsFixed(4)}, ${user.longitude.toStringAsFixed(4)}',

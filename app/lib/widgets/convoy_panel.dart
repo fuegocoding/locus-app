@@ -16,7 +16,7 @@ class ConvoyPanel extends StatelessWidget {
 
     if (convoy == null) return const SizedBox.shrink();
 
-    final inviteUrl = 'https://locus.app/convoy/${convoy.inviteCode}';
+    final inviteUrl = 'https://locus.wtf/convoy/${convoy.inviteCode}';
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 60,

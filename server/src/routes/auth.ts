@@ -83,6 +83,7 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
   try {
     const rawPhone = (req.body.phone || '').trim();
     const code = (req.body.code || '').trim();
+    const referralUsername = (req.body.referralUsername || '').trim();
     if (!rawPhone || !code) {
       res.status(400).json({ error: 'Phone and code required' });
       return;
@@ -143,11 +144,44 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
     }
     const userId = user.id;
 
+    // Handle referral tracking for new users
+    let referredBy: string | null = null;
+    if (isNewUser && referralUsername) {
+      try {
+        const referrer = await prisma.user.findFirst({
+          where: {
+            displayName: {
+              equals: referralUsername,
+              mode: 'insensitive'
+            }
+          }
+        });
+        if (referrer && referrer.id !== userId) {
+          const existingReferral = await prisma.referral.findUnique({
+            where: { refereeId: userId }
+          });
+          if (!existingReferral) {
+            await prisma.referral.create({
+              data: {
+                referrerId: referrer.id,
+                refereeId: userId,
+              }
+            });
+            referredBy = referrer.displayName;
+            console.log(`[Referral] ${userId} was referred by ${referrer.displayName}`);
+          }
+        }
+      } catch (err) {
+        console.error('[Referral] Failed to create referral:', err);
+      }
+    }
+
     const token = generateAuthToken(userId!, phone);
     res.json({
       token,
       userId,
       isNewUser,
+      ...(referredBy ? { referredBy } : {}),
     });
   } catch (error: any) {
     console.error('[Auth] Verify error:', error);

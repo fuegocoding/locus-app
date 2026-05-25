@@ -78,7 +78,7 @@ export function assignProximityRoom(
 ): { roomId: string; isNew: boolean } {
   for (const [roomId, room] of activeRooms) {
     const distToCenter = calculateDistance(latitude, longitude, room.centerLat, room.centerLng);
-    if (distToCenter <= room.radius * 0.8) {
+    if (distToCenter <= room.radius) {
       if (canJoin(room, userId)) {
         room.participants.set(userId, {
           joinedAt: Date.now(),

@@ -35,11 +35,15 @@ class ApiService {
     if (r.statusCode != 200) throw Exception(body['error'] ?? 'Failed to send code');
     return body;
   }
-  Future<Map<String, dynamic>> verifyCode(String phone, String code) async {
-    final r = await http.post(Uri.parse('$baseUrl/api/auth/verify/check'), headers: _headers, body: jsonEncode({'phone': phone, 'code': code}));
-    final body = jsonDecode(r.body);
-    if (r.statusCode == 200 && body['token'] != null) await saveToken(body['token']);
-    return body;
+  Future<Map<String, dynamic>> verifyCode(String phone, String code, {String? referralUsername}) async {
+    final body = <String, dynamic>{'phone': phone, 'code': code};
+    if (referralUsername != null && referralUsername.isNotEmpty) {
+      body['referralUsername'] = referralUsername;
+    }
+    final r = await http.post(Uri.parse('$baseUrl/api/auth/verify/check'), headers: _headers, body: jsonEncode(body));
+    final decoded = jsonDecode(r.body);
+    if (r.statusCode == 200 && decoded['token'] != null) await saveToken(decoded['token']);
+    return decoded;
   }
   Future<Map<String, dynamic>?> getProfile() async {
     if (authToken == null) return null;

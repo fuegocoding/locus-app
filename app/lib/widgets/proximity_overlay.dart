@@ -79,7 +79,7 @@ class ProximityOverlay extends StatelessWidget {
 
   void _showShareSheet(BuildContext context, AppState state) {
     final username = state.user?.displayName ?? 'demo';
-    final inviteLink = 'https://locus.app/join/$username';
+    final inviteLink = 'https://locus.wtf/$username';
 
     showModalBottomSheet(
       context: context,
@@ -130,7 +130,7 @@ class ProximityOverlay extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () {
                   Share.share(
-                    'Join me on Locus! $inviteLink',
+                    'Join me on Locus! https://locus.wtf/$username',
                     subject: 'Join Locus',
                   );
                   Navigator.pop(context);
