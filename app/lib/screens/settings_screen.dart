@@ -1,9 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/app_state.dart';
+import '../services/overlay_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _overlayEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    OverlayService.init();
+    OverlayService.isRunning().then((running) {
+      if (mounted) setState(() => _overlayEnabled = running);
+    });
+  }
+
+  Future<void> _toggleOverlay(bool enable) async {
+    if (enable) {
+      final canDraw = await OverlayService.canDrawOverlays();
+      if (!canDraw) {
+        OverlayService.requestOverlayPermission();
+        return;
+      }
+      await OverlayService.start();
+    } else {
+      await OverlayService.stop();
+    }
+    final running = await OverlayService.isRunning();
+    if (mounted) setState(() => _overlayEnabled = running);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +57,13 @@ class SettingsScreen extends StatelessWidget {
               ),
               title: Text(state.user!.displayName),
               subtitle: Text(state.user!.phone),
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code, color: Color(0xFFC4B5FD)),
+              title: const Text('My QR Code'),
+              subtitle: const Text('Share your profile with a QR code'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showMyQr(context, state),
             ),
           ],
           _sectionHeader('Privacy', theme),
@@ -67,6 +108,13 @@ class SettingsScreen extends StatelessWidget {
                 state.startBackgroundService();
               }
             },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.bubble_chart, color: Color(0xFFC4B5FD)),
+            title: const Text('Voice Overlay'),
+            subtitle: const Text('Show a floating mic bubble over other apps'),
+            value: _overlayEnabled,
+            onChanged: _toggleOverlay,
           ),
           _sectionHeader('Account', theme),
           ListTile(
@@ -255,6 +303,92 @@ class SettingsScreen extends StatelessWidget {
             child: const Text('Logout'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showMyQr(BuildContext context, AppState state) {
+    final username = state.user?.displayName ?? 'unknown';
+    final inviteLink = 'https://locus.wtf/$username';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF161B22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'My QR Code',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '@$username',
+                style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: QrImageView(
+                  data: inviteLink,
+                  version: QrVersions.auto,
+                  size: 220,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                inviteLink,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Share.share(
+                      'Join me on Locus! $inviteLink',
+                      subject: 'Join Locus',
+                    );
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.share, size: 18),
+                  label: const Text('Share Link'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6C63FF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
       ),
     );
   }

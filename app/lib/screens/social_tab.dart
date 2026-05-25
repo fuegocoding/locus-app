@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import 'qr_scan_screen.dart';
 
 class SocialTabScreen extends StatefulWidget {
   final bool autoFocus;
@@ -60,6 +61,37 @@ class _SocialTabScreenState extends State<SocialTabScreen> {
     }
   }
 
+  Future<void> _scanQrCode() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScanScreen()),
+    );
+    if (result == null || !mounted) return;
+
+    String? username;
+    final locusWtfPrefix = RegExp(r'locus\.wtf/([a-zA-Z0-9_]+)');
+    final locusAppPrefix = RegExp(r'locus\.app/(join|convoy)/([a-zA-Z0-9_]+)');
+    final match = locusWtfPrefix.firstMatch(result);
+    if (match != null) {
+      username = match.group(1);
+    } else {
+      final joinMatch = locusAppPrefix.firstMatch(result);
+      if (joinMatch != null) {
+        username = joinMatch.group(2);
+      }
+    }
+
+    if (username != null) {
+      _searchController.text = username;
+      _searchQuery = username;
+      _onSearchChanged(username, context.read<AppState>());
+    } else {
+      _searchController.text = result;
+      _searchQuery = result;
+      _onSearchChanged(result, context.read<AppState>());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -80,6 +112,13 @@ class _SocialTabScreenState extends State<SocialTabScreen> {
             color: Colors.white,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: Color(0xFFC4B5FD)),
+            tooltip: 'Scan QR Code',
+            onPressed: _scanQrCode,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -101,15 +140,24 @@ class _SocialTabScreenState extends State<SocialTabScreen> {
                   hintText: 'Search by username...',
                   hintStyle: const TextStyle(color: Colors.white38),
                   prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.qr_code_scanner, color: Color(0xFFC4B5FD), size: 22),
+                        tooltip: 'Scan QR',
+                        onPressed: _scanQrCode,
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        IconButton(
                           icon: const Icon(Icons.clear, color: Colors.white54),
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('', state);
                           },
-                        )
-                      : null,
+                        ),
+                    ],
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),

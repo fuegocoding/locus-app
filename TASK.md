@@ -82,6 +82,13 @@
 - [x] Applied purple theme to convoy panel, video grid, home screen mode indicator and Live badge
 
 ## 🧹 Backlog
+- [ ] **Map profile pictures** — Show other users as their profile picture on the map (only within radius). Friends visible anytime, anywhere. Clicking a user's pfp shows a popup with their address and a Directions button that opens the default maps app.
+  - Update `PresenceUpdate` types (frontend + Redis) to include `displayName`, `avatar`, `anonymousMode`
+  - Store/retrieve avatar in Redis presence data
+  - Socket handler: include avatar in presence broadcasts and `friends:location` events
+  - Frontend store: track `friendLocations` with `friends:location` socket listener
+  - `MapView` component: render profile pics, friend markers (always visible, distinct style), click handler
+  - New `UserPopup` component: reverse geocode address, Directions → open default maps app via `maps:` / Google Maps URL
 - [x] Onboarding validation errors (phone, username) should only appear after the user clicks Continue, not while typing. Prevent submission instead of interrupting with live errors.
 - [x] See friends on map with distinct green markers
 - [x] Reciprocal pin notification (banner when someone pins you, with Pin back button)

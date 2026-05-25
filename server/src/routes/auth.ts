@@ -161,7 +161,7 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
             where: { refereeId: userId }
           });
           if (!existingReferral) {
-            await prisma.referral.create({
+            const referral = await prisma.referral.create({
               data: {
                 referrerId: referrer.id,
                 refereeId: userId,
@@ -169,6 +169,32 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
             });
             referredBy = referrer.displayName;
             console.log(`[Referral] ${userId} was referred by ${referrer.displayName}`);
+
+            // Award referral points (50 pts per referral, repeatable)
+            try {
+              await prisma.user.update({
+                where: { id: referrer.id },
+                data: { points: { increment: 50 } }
+              });
+              await prisma.referral.update({
+                where: { id: referral.id },
+                data: {
+                  convertedAt: new Date(),
+                  rewardedAt: new Date()
+                }
+              });
+              await prisma.taskCompletion.create({
+                data: {
+                  userId: referrer.id,
+                  taskType: 'referral',
+                  pointsEarned: 50,
+                  metadata: JSON.stringify({ refereeId: userId, refereeName: `User_${userId.slice(0, 6)}` })
+                }
+              });
+              console.log(`[Referral] Awarded 50 pts to ${referrer.displayName}`);
+            } catch (err) {
+              console.error('[Referral] Failed to award points:', err);
+            }
           }
         }
       } catch (err) {

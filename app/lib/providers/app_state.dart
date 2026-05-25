@@ -6,6 +6,7 @@ import '../services/socket_service.dart';
 import '../services/location_service.dart';
 import '../services/audio_service.dart';
 import '../services/api_service.dart';
+import '../services/overlay_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -102,6 +103,16 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     await apiService.loadToken();
     final prefs = await SharedPreferences.getInstance();
+
+    OverlayService.init();
+    OverlayService.micToggledStream.listen((muted) {
+      if (_micMuted != muted) {
+        _micMuted = muted;
+        socketService.toggleMic(_micMuted);
+        audioService.setMuted(_micMuted);
+        notifyListeners();
+      }
+    });
 
     // Load last cached coordinates immediately to prevent New York map jump
     final lastLat = prefs.getDouble('last_latitude');
@@ -453,6 +464,7 @@ class AppState extends ChangeNotifier {
     _micMuted = !_micMuted;
     socketService.toggleMic(_micMuted);
     audioService.setMuted(_micMuted);
+    OverlayService.setMuted(_micMuted);
     notifyListeners();
   }
 
