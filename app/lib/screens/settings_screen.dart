@@ -70,16 +70,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.visibility),
             title: const Text('Discoverability'),
-            subtitle: Text(_privacyLabel(state.user?.privacyMode ?? 'open')),
+            subtitle: Text(_privacyLabel(state.user?.privacyMode ?? 'open', state.user?.anonymousMode ?? false)),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showPrivacySheet(context, state),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.masks),
-            title: const Text('Anonymous Mode'),
-            subtitle: const Text('Masks your username to nearby users'),
-            value: state.user?.anonymousMode ?? false,
-            onChanged: (v) => state.toggleAnonymousMode(v),
           ),
           _sectionHeader('Audio', theme),
           SwitchListTile(
@@ -150,7 +143,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _privacyLabel(String mode) {
+  String _privacyLabel(String mode, bool anonymous) {
+    if (mode == 'open' && anonymous) return 'Open (anonymous)';
     switch (mode) {
       case 'open': return 'Open - Anyone nearby';
       case 'friends-only': return 'Friends only';
@@ -205,6 +199,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showPrivacySheet(BuildContext context, AppState state) {
+    final isOpen = state.user?.privacyMode == 'open';
+    final isAnonymous = state.user?.anonymousMode ?? false;
     showModalBottomSheet(
       context: context,
       builder: (_) => SafeArea(
@@ -218,30 +214,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               leading: const Icon(Icons.public),
               title: const Text('Open'),
-              subtitle: const Text('Anyone nearby can see and hear you'),
-              trailing: state.user?.privacyMode == 'open' ? const Icon(Icons.check, color: Colors.green) : null,
-              onTap: () { _setPrivacy(context, state, 'open'); },
+              subtitle: const Text('Anyone nearby can see your name and hear you'),
+              trailing: isOpen && !isAnonymous ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { _setPrivacy(context, state, 'open', false); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.masks),
+              title: const Text('Open (anonymous)'),
+              subtitle: const Text('Visible to anyone, but your name is hidden'),
+              trailing: isOpen && isAnonymous ? const Icon(Icons.check, color: Colors.green) : null,
+              onTap: () { _setPrivacy(context, state, 'open', true); },
             ),
             ListTile(
               leading: const Icon(Icons.people),
               title: const Text('Friends Only'),
-              subtitle: const Text('Only friends can see you'),
+              subtitle: const Text('Only friends can see and hear you'),
               trailing: state.user?.privacyMode == 'friends-only' ? const Icon(Icons.check, color: Colors.green) : null,
-              onTap: () { _setPrivacy(context, state, 'friends-only'); },
+              onTap: () { _setPrivacy(context, state, 'friends-only', false); },
             ),
             ListTile(
               leading: const Icon(Icons.groups),
               title: const Text('Convoy Only'),
               subtitle: const Text('Visible only in your active convoy'),
               trailing: state.user?.privacyMode == 'convoy-only' ? const Icon(Icons.check, color: Colors.green) : null,
-              onTap: () { _setPrivacy(context, state, 'convoy-only'); },
+              onTap: () { _setPrivacy(context, state, 'convoy-only', false); },
             ),
             ListTile(
               leading: const Icon(Icons.visibility_off),
               title: const Text('Invisible'),
               subtitle: const Text('Completely hidden from others'),
               trailing: state.user?.privacyMode == 'invisible' ? const Icon(Icons.check, color: Colors.green) : null,
-              onTap: () { _setPrivacy(context, state, 'invisible'); },
+              onTap: () { _setPrivacy(context, state, 'invisible', false); },
             ),
           ],
         ),
@@ -249,9 +252,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _setPrivacy(BuildContext context, AppState state, String mode) {
-    state.apiService.updateProfile({'privacyMode': mode});
+  void _setPrivacy(BuildContext context, AppState state, String mode, bool anonymous) {
+    state.apiService.updateProfile({
+      'privacyMode': mode,
+      'anonymousMode': anonymous,
+    });
     state.user?.privacyMode = mode;
+    state.user?.anonymousMode = anonymous;
     Navigator.pop(context);
   }
 

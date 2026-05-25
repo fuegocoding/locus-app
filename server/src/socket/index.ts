@@ -24,6 +24,7 @@ interface ConnectedUser {
   videoEnabled: boolean;
   displayName: string;
   anonymousMode: boolean;
+  privacyMode: string;
 }
 
 const connectedUsers = new Map<string, ConnectedUser>();
@@ -50,12 +51,13 @@ export function setupSocketHandlers(io: TypedServer): void {
     if (userId) {
       prisma.user.findUnique({
         where: { id: userId },
-        select: { displayName: true, anonymousMode: true }
+        select: { displayName: true, anonymousMode: true, privacyMode: true }
       }).then((dbUser) => {
         const user = connectedUsers.get(socket.id);
         if (user) {
           user.displayName = dbUser?.displayName || `User_${userId.slice(0, 6)}`;
           user.anonymousMode = dbUser?.anonymousMode ?? false;
+          user.privacyMode = dbUser?.privacyMode || 'open';
         }
       }).catch((err) => {
         console.error('[Socket] Error fetching user profile on connect:', err);
@@ -89,7 +91,7 @@ export function setupSocketHandlers(io: TypedServer): void {
         data.longitude,
         data.speed,
         data.heading,
-        'open',
+        user.privacyMode,
         user.mode,
         user.convoyId,
         user.displayName,
@@ -479,12 +481,13 @@ export function setupSocketHandlers(io: TypedServer): void {
 
 export function addConnectedUser(
   socketId: string,
-  user: Omit<ConnectedUser, 'videoEnabled' | 'displayName' | 'anonymousMode'> & { displayName?: string; anonymousMode?: boolean }
+  user: Omit<ConnectedUser, 'videoEnabled' | 'displayName' | 'anonymousMode' | 'privacyMode'> & { displayName?: string; anonymousMode?: boolean; privacyMode?: string }
 ): void {
   connectedUsers.set(socketId, {
     ...user,
     displayName: user.displayName || `User_${user.userId.slice(0, 6)}`,
     anonymousMode: user.anonymousMode || false,
+    privacyMode: user.privacyMode || 'open',
     videoEnabled: false,
   });
 }
@@ -492,12 +495,14 @@ export function addConnectedUser(
 export function updateConnectedUserDetails(
   userId: string,
   displayName: string,
-  anonymousMode: boolean
+  anonymousMode: boolean,
+  privacyMode?: string
 ): void {
   for (const user of connectedUsers.values()) {
     if (user.userId === userId) {
       user.displayName = displayName;
       user.anonymousMode = anonymousMode;
+      if (privacyMode) user.privacyMode = privacyMode;
     }
   }
 }

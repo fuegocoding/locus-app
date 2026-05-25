@@ -297,7 +297,8 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
       updateConnectedUserDetails(
         updatedUser.id,
         updatedUser.displayName,
-        updatedUser.anonymousMode
+        updatedUser.anonymousMode,
+        updatedUser.privacyMode
       );
     } catch (err) {
       // Non-critical socket sync fail
