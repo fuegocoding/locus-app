@@ -85,7 +85,6 @@ class MapWidgetState extends State<MapWidget> {
               urlTemplate: _tileUrl,
               subdomains: const ['a', 'b', 'c', 'd'],
               userAgentPackageName: 'com.locus.locus',
-              tileProvider: NetworkTileProvider(),
             ),
             MarkerLayer(
               markers: [
