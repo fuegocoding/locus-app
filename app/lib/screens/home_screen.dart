@@ -55,89 +55,35 @@ class _HomeScreenState extends State<HomeScreen> {
     if (showAudioError) proximityTop += 38;            // audio error banner
 
     return Scaffold(
-      body: Stack(
-        children: [
-          // Bright debug background to confirm rendering
-          const Positioned.fill(
-            child: ColoredBox(color: Color(0xFF1A1A3E)),
-          ),
-          Positioned.fill(child: MapWidget(key: _mapKey)),
-
-          // ── Top bar ─────────────────────────────────────────────────────
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 4,
-            left: 8,
-            right: 8,
-            child: _buildTopBar(state, theme),
-          ),
-
-          // ── Banners ──────────────────────────────────────────────────────
-          if (!state.isOnline) _buildOfflineBanner(theme),
-          if (showAudioError) _buildAudioErrorBanner(state, theme),
-          if (state.pinnedByMessage != null) _buildPinnedBanner(state, theme),
-
-          // ── Mode overlays ────────────────────────────────────────────────
-          if (state.mode == 'proximity')
-            ProximityOverlay(topOffset: proximityTop)
-          else if (state.mode == 'convoy') ...[
-            const ConvoyPanel(),
-          ],
-
-          // ── Convoy invite banner ─────────────────────────────────────────
-          _buildInviteBanner(state, theme),
-
-          // ── Mic — above bar, left ────────────────────────────────────────
-          Positioned(
-            bottom: _floatBottom(bottomSafe),
-            left: 16,
-            child: _buildMicCircle(state, theme),
-          ),
-
-          // ── Speedometer — above bar, right ───────────────────────────────
-          Positioned(
-            bottom: _floatBottom(bottomSafe),
-            right: 16,
-            child: Speedometer(
-              speedKmh: state.speed,
-              unit: state.resolvedSpeedUnit,
-              size: 72,
-            ),
-          ),
-
-          // ── Relocate button — just above speedometer ──────────────────────
-          if (_mapKey.currentState != null &&
-              !_mapKey.currentState!.followingUser &&
-              state.latitude != 0)
-            Positioned(
-              bottom: _floatBottom(bottomSafe) + 80,
-              right: 16,
-              child: Material(
-                color: const Color(0xFF1A1A3E).withOpacity(0.85),
-                borderRadius: BorderRadius.circular(28),
-                elevation: 4,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(28),
-                  onTap: () => _mapKey.currentState?.recenterOnUser(state),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3)),
-                    ),
-                    child: const Icon(Icons.my_location, color: Color(0xFFC4B5FD), size: 22),
-                  ),
-                ),
+      backgroundColor: const Color(0xFF1E1E3E),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'HOME SCREEN',
+                style: TextStyle(color: Color(0xFF00FF87), fontSize: 32, fontWeight: FontWeight.bold),
               ),
-            ),
-
-          // ── Bottom nav bar ───────────────────────────────────────────────
-          _buildBottomBar(state, theme, bottomSafe),
-
-          // ── PTT swipe hint ───────────────────────────────────────────────
-          if (_isHolding && state.pushToTalk && !_swipedToLock)
-            _buildSwipeIndicator(theme, bottomSafe),
-        ],
+              const SizedBox(height: 16),
+              Text(
+                'User: ${state.user?.displayName ?? "null"}',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mode: ${state.mode} | Nearby: ${state.nearbyUsers.length}',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => state.startLocation(),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C63FF)),
+                child: const Text('Start Location'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
