@@ -13,36 +13,35 @@ void main() {
 
   ErrorWidget.builder = (details) {
     debugPrint('FLUTTER CRASH: ${details.exceptionAsString()}\n${details.stack}');
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF0D1117),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF),
-          brightness: Brightness.dark,
-        ),
-      ),
-      home: Scaffold(
-        backgroundColor: const Color(0xFF0D1117),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 48),
-                const SizedBox(height: 16),
-                const Text(
-                  'Something went wrong',
-                  style: TextStyle(
-                    color: Color(0xFFEF4444),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.none,
-                  ),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        color: const Color(0xFF0D1117),
+        alignment: Alignment.center,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Something went wrong',
+                style: TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none,
                 ),
-                const SizedBox(height: 16),
-                Text(
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1B1F),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
                   details.exceptionAsString(),
                   style: const TextStyle(
                     color: Colors.white70,
@@ -51,28 +50,8 @@ void main() {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    // Force restart by rebuilding from scratch
-                    runApp(
-                      ChangeNotifierProvider(
-                        create: (_) => AppState(),
-                        child: const LocusApp(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C63FF),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Restart App'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -170,8 +149,33 @@ class _AppEntryState extends State<AppEntry> {
       }
 
       debugPrint('APPSTATE: isAuthenticated=${state.isAuthenticated}, hasProfile=${state.hasProfile}, error=${state.error}');
-      if (!state.isAuthenticated) return const OnboardingScreen();
-      if (!state.hasProfile) return const ProfileSetupScreen();
+      if (!state.isAuthenticated) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Screen: Onboarding'), duration: Duration(seconds: 1), backgroundColor: Color(0xFF161B22)),
+            );
+          }
+        });
+        return const OnboardingScreen();
+      }
+      if (!state.hasProfile) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Screen: ProfileSetup — user=${state.user?.displayName}'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF161B22)),
+            );
+          }
+        });
+        return const ProfileSetupScreen();
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Screen: HomeScreen'), duration: Duration(seconds: 1), backgroundColor: Color(0xFF161B22)),
+          );
+        }
+      });
       return const HomeScreen();
     });
   }
