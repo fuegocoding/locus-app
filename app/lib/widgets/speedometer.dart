@@ -37,10 +37,10 @@ class Speedometer extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.black.withOpacity(0.6),
+              color: const Color(0xFF161B22),
               border: Border.all(
-                color: Colors.white.withOpacity(0.15),
-                width: 1.5,
+                color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
+                width: 2,
               ),
             ),
           ),
@@ -68,7 +68,7 @@ class Speedometer extends StatelessWidget {
               Text(
                 unit.toUpperCase(),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white70,
                   fontSize: size * 0.12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -106,7 +106,7 @@ class _ArcPainter extends CustomPainter {
 
     // Background track
     final trackPaint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white24
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
