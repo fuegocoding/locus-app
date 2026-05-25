@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
 const String _tileUrl =
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
@@ -30,13 +30,10 @@ class MapWidgetState extends State<MapWidget> {
 
   void _followIfNeeded(AppState state) {
     if (followingUser && state.latitude != 0 && state.longitude != 0) {
-      debugPrint('MAPWIDGET: _followIfNeeded moving to ${state.latitude}, ${state.longitude}');
       _mapController.move(
         LatLng(state.latitude, state.longitude),
         _mapController.camera.zoom,
       );
-    } else {
-      debugPrint('MAPWIDGET: _followIfNeeded skipped: followingUser=$followingUser, lat=${state.latitude}, lng=${state.longitude}');
     }
   }
 
@@ -56,7 +53,6 @@ class MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('MAPWIDGET: build() start');
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
 
@@ -64,12 +60,7 @@ class MapWidgetState extends State<MapWidget> {
         ? LatLng(state.latitude, state.longitude)
         : const LatLng(40.7128, -74.0060);
 
-    debugPrint('MAPWIDGET: userLocation=$userLocation, followingUser=$followingUser');
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('MAPWIDGET: addPostFrameCallback triggering _followIfNeeded');
-      _followIfNeeded(state);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _followIfNeeded(state));
 
     return Stack(
       children: [
@@ -80,7 +71,6 @@ class MapWidgetState extends State<MapWidget> {
             initialZoom: 15,
             minZoom: 3,
             maxZoom: 19,
-            backgroundColor: const Color(0xFF0A0A1A),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
@@ -122,10 +112,8 @@ class MapWidgetState extends State<MapWidget> {
                   ),
                 ),
                 ...state.friendLocations.map((f) {
-                  final lat = (f['latitude'] as num?)?.toDouble() ?? 0.0;
-                  final lng = (f['longitude'] as num?)?.toDouble() ?? 0.0;
                   return Marker(
-                    point: LatLng(lat, lng),
+                    point: LatLng(f['latitude'] as double, f['longitude'] as double),
                     width: 44,
                     height: 56,
                     child: Column(
