@@ -73,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           _buildBottomBar(state, theme, bottomSafe),
+
+          Positioned(
+            bottom: _floatBottom(bottomSafe),
+            left: 16,
+            child: _buildMicCircle(state, theme),
+          ),
         ],
       ),
     );
