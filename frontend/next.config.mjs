@@ -4,17 +4,6 @@ const nextConfig = {
   poweredByHeader: false, // hide X-Powered-By
   compress: true,
 
-  // Proxy /app/download to backend APK server
-  async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    return [
-      {
-        source: '/app/download',
-        destination: `${apiUrl}/download`,
-      },
-    ]
-  },
-
   // Allow maplibre worker
   webpack(config) {
     config.resolve.alias = {
