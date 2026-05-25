@@ -57,6 +57,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Bright debug background to confirm rendering
+          const Positioned.fill(
+            child: ColoredBox(color: Color(0xFF1A1A3E)),
+          ),
           Positioned.fill(child: MapWidget(key: _mapKey)),
 
           // ── Top bar ─────────────────────────────────────────────────────
