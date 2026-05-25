@@ -23,6 +23,8 @@ export interface PresenceUpdate {
   privacyMode: PrivacyMode;
   mode: 'proximity' | 'convoy';
   convoyId?: string;
+  displayName?: string;
+  anonymousMode?: boolean;
   timestamp: number;
 }
 
