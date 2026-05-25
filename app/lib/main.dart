@@ -12,11 +12,11 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   ErrorWidget.builder = (details) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: const Color(0xFF0D1117),
-        body: Center(
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Material(
+        color: const Color(0xFF0D1117),
+        child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -26,12 +26,12 @@ void main() {
                 const SizedBox(height: 16),
                 const Text(
                   'Something went wrong',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'sans-serif'),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   details.exceptionAsString(),
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: const TextStyle(color: Colors.white54, fontSize: 12, fontFamily: 'sans-serif'),
                   textAlign: TextAlign.center,
                 ),
               ],

@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
 const String _tileUrl =
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
@@ -112,8 +112,10 @@ class MapWidgetState extends State<MapWidget> {
                   ),
                 ),
                 ...state.friendLocations.map((f) {
+                  final lat = (f['latitude'] as num?)?.toDouble() ?? 0.0;
+                  final lng = (f['longitude'] as num?)?.toDouble() ?? 0.0;
                   return Marker(
-                    point: LatLng(f['latitude'] as double, f['longitude'] as double),
+                    point: LatLng(lat, lng),
                     width: 44,
                     height: 56,
                     child: Column(
