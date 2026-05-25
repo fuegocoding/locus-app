@@ -18,10 +18,25 @@ function isMutating(method?: string): boolean {
   return ['POST', 'PATCH', 'DELETE', 'PUT'].includes(method.toUpperCase())
 }
 
+function normalizeHeaders(h?: HeadersInit): Record<string, string> {
+  if (!h) return {}
+  if (h instanceof Headers) {
+    const out: Record<string, string> = {}
+    h.forEach((v, k) => { out[k] = v })
+    return out
+  }
+  if (Array.isArray(h)) {
+    const out: Record<string, string> = {}
+    for (const [k, v] of h) out[k] = v
+    return out
+  }
+  return { ...h }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...init?.headers,
+    ...normalizeHeaders(init?.headers),
   }
 
   // Double-submit CSRF token on state-changing requests
