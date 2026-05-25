@@ -10,7 +10,7 @@ import { disconnectSocket } from '@/lib/socket'
 import { AdSlot } from '@/components/ui/AdSlot'
 import { Logo } from '@/components/ui/logo'
 
-const APK_URL = 'https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk'
+const APK_URL = 'https://locus.wtf/app/download'
 
 const NAV = [
   { href: '/tasks', label: 'Tasks', icon: ClipboardList },

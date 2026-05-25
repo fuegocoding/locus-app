@@ -51,8 +51,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
   if (!user) notFound()
 
-  const githubReleaseUrl = 'https://github.com/fuegocoding/locus-app/releases'
-  const latestApkUrl = 'https://github.com/fuegocoding/locus-app/releases/latest/download/app-release.apk'
+  const downloadUrl = 'https://locus.wtf/app/download'
   const memberSince = new Date(user.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -105,7 +104,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
           <div className="space-y-4">
             <a
-              href={latestApkUrl}
+              href={downloadUrl}
               className="flex items-center justify-center gap-2 w-full px-8 py-4 bg-primary text-white rounded-xl text-lg font-bold hover:bg-primary-dim transition-all duration-200 shadow-sm"
             >
               <Download className="w-5 h-5" />
@@ -114,14 +113,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
             <p className="text-xs text-muted">
               Google Play Store coming soon.{' '}
-              <a
-                href={githubReleaseUrl}
+              <Link
+                href={downloadUrl}
                 className="underline hover:text-foreground transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
               >
-                GitHub releases
-              </a>
+                Direct download
+              </Link>
             </p>
 
             <div className="flex items-center justify-center gap-3 pt-4">

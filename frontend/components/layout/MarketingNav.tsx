@@ -24,7 +24,7 @@ export function MarketingNav() {
         </Link>
       )}
       <Link
-        href="https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk"
+        href="https://locus.wtf/app/download"
         className="text-sm bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dim transition-all duration-200 font-semibold shadow-sm"
       >
         Get Started

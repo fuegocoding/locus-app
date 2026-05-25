@@ -8,7 +8,7 @@ import { NeonCard } from '@/components/ui/neon-card'
 import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/utils'
 
-const APK_URL = 'https://github.com/fuegocoding/locus-app/releases/download/v1.0.0/app-release.apk'
+const APK_URL = 'https://locus.wtf/app/download'
 
 const PRIVACY_MODES = [
   { value: 'open', label: 'Open', desc: 'Anyone nearby can see and hear you' },

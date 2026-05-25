@@ -84,6 +84,16 @@ app.use(generalLimiter);
 
 app.use(express.json({ limit: '1mb' }));
 
+// Serve static files (APK downloads, etc.)
+import path from 'path';
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Direct download endpoint (also works via /download)
+app.get('/download', (_req, res) => {
+  const apkPath = path.join(__dirname, '..', 'public', 'app-release.apk');
+  res.download(apkPath, 'locus.apk');
+});
+
 // Health check
 app.get('/health', async (_req, res) => {
   const health = {
