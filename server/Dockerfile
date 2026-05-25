@@ -27,6 +27,9 @@ RUN npm ci --only=production && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
 
+# Static files (APK downloads, etc.)
+COPY server/public/ ./public/
+
 EXPOSE 3001
 
 CMD npx prisma db push --accept-data-loss && node dist/index.js
