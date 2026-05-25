@@ -187,6 +187,7 @@ class AppState extends ChangeNotifier {
       final r = await apiService.verifyCode(phone, code, referralUsername: referralUsername);
       if (r['token'] != null) {
         _isAuthenticated = true;
+        _error = null;
         final p = await apiService.getProfile();
         if (p != null) _user = User.fromJson(p);
         _connectSocket();
@@ -256,11 +257,24 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
+  StreamSubscription<List<PresenceUpdate>>? _presenceSub;
+  StreamSubscription<Map<String, double>>? _volumeSub;
+  StreamSubscription<Map<String, bool>>? _speakingSub;
+  StreamSubscription<Map<String, dynamic>>? _convoySub;
+  StreamSubscription<Map<String, dynamic>>? _tokenSub;
+  StreamSubscription<String>? _errorSub;
+  StreamSubscription<Map<String, dynamic>>? _videoSub;
+  StreamSubscription<void>? _deletedSub;
+  StreamSubscription<Map<String, dynamic>>? _friendLocSub;
+  StreamSubscription<Map<String, dynamic>>? _pinnedSub;
+  StreamSubscription<Map<String, dynamic>>? _inviteSub;
+
   void _connectSocket() {
     socketService.connect(apiService.baseUrl, apiService.authToken ?? '');
     _startFriendLocationPolling();
 
-    socketService.presenceStream.listen((ups) {
+    _presenceSub?.cancel();
+    _presenceSub = socketService.presenceStream.listen((ups) {
       for (final u in ups) {
         final i = _nearbyUsers.indexWhere((x) => x.userId == u.userId);
         if (i >= 0) {
@@ -270,6 +284,116 @@ class AppState extends ChangeNotifier {
         }
       }
       notifyListeners();
+    });
+
+    _volumeSub?.cancel();
+    _volumeSub = socketService.volumeStream.listen((v) {
+      _volumes.addAll(v);
+      for (final entry in v.entries) {
+        audioService.applyVolume(entry.key, entry.value);
+      }
+      notifyListeners();
+    });
+
+    _speakingSub?.cancel();
+    _speakingSub = socketService.speakingStream.listen((s) {
+      _speaking.addAll(s);
+      notifyListeners();
+    });
+
+    _convoySub?.cancel();
+    _convoySub = socketService.convoyStream.listen((d) {
+      if (d['type'] == 'created' || d['type'] == 'joined') {
+        if (d['convoy'] != null) _currentConvoy = Convoy.fromJson(d['convoy']);
+        _mode = 'convoy';
+        _convoyId = _currentConvoy?.id;
+      } else if (d['type'] == 'left') {
+        _currentConvoy = null;
+        _convoyId = null;
+        _mode = 'proximity';
+      }
+      notifyListeners();
+    });
+
+    _tokenSub?.cancel();
+    _tokenSub = socketService.audioTokenStream.listen((data) {
+      _livekitRoom = data['room'];
+      _livekitToken = data['token'];
+      _livekitServerUrl = data['serverUrl'];
+      _connectAudio();
+      notifyListeners();
+    });
+
+    _errorSub?.cancel();
+    _errorSub = socketService.errorStream.listen((e) {
+      _error = e;
+      notifyListeners();
+    });
+
+    _videoSub?.cancel();
+    _videoSub = socketService.videoStream.listen((d) {
+      if (d['type'] == 'started') { _remoteVideoEnabled[d['userId']] = true; notifyListeners(); }
+      else if (d['type'] == 'stopped') { _remoteVideoEnabled[d['userId']] = false; notifyListeners(); }
+    });
+
+    _deletedSub?.cancel();
+    _deletedSub = socketService.accountDeletedStream.listen((_) {
+      _isAuthenticated = false;
+      _user = null;
+      _friends = [];
+      _pendingInvites = [];
+      _currentConvoy = null;
+      _convoyId = null;
+      _nearbyUsers.clear();
+      apiService.clearToken();
+      _friendLocationTimer?.cancel();
+      notifyListeners();
+    });
+
+    _friendLocSub?.cancel();
+    _friendLocSub = socketService.friendLocationStream.listen((data) {
+      final idx = _friendLocations.indexWhere((f) => f['userId'] == data['userId']);
+      if (idx >= 0) {
+        _friendLocations[idx] = data;
+      } else {
+        _friendLocations.add(data);
+      }
+      notifyListeners();
+    });
+
+    _pinnedSub?.cancel();
+    _pinnedSub = socketService.pinnedYouStream.listen((data) {
+      _pinnedByMessage = '${data['pinnedByDisplayName']} pinned you on the map!';
+      notifyListeners();
+      loadFriends();
+      Future.delayed(const Duration(seconds: 5), () {
+        if (_pinnedByMessage != null) {
+          _pinnedByMessage = null;
+          notifyListeners();
+        }
+      });
+    });
+
+    _inviteSub?.cancel();
+    _inviteSub = socketService.inviteStream.listen((d) {
+      if (d['type'] == 'received') {
+        final inviteId = d['id'];
+        if (!_pendingInvites.any((x) => x['id'] == inviteId)) {
+          _pendingInvites.add({
+            'id': inviteId,
+            'convoyId': d['convoyId'],
+            'convoyName': d['convoyName'],
+            'senderId': d['senderId'],
+            'senderName': d['senderName'],
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+          notifyListeners();
+        }
+      } else if (d['type'] == 'responded') {
+        if (d['status'] == 'accepted') {
+          loadFriends();
+        }
+      }
     });
 
     socketService.volumeStream.listen((v) {
