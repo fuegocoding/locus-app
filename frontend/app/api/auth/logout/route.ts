@@ -9,5 +9,12 @@ export async function POST() {
     maxAge: 0,
     path: '/',
   })
+  res.cookies.set('locus_csrf', '', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0,
+    path: '/',
+  })
   return res
 }

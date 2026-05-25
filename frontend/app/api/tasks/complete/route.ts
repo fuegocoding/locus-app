@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { checkRateLimit, getClientIp } from '@/lib/security'
+import { checkRateLimit, getClientIp, validateCsrf } from '@/lib/security'
 
 async function getTokenFromRequest(req: NextRequest): Promise<string | null> {
   return req.cookies.get('locus_token')?.value ?? null
+}
+
+function requireCsrf(req: NextRequest): NextResponse | null {
+  const csrfCookie = req.cookies.get('locus_csrf')?.value
+  if (!validateCsrf(req, csrfCookie)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+  }
+  return null
 }
 
 const schema = z.object({
@@ -12,6 +20,9 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const csrfErr = requireCsrf(req)
+  if (csrfErr) return csrfErr
+
   const ip = getClientIp(req)
   // Rate limit: 20 task completions per hour per IP
   if (!checkRateLimit(`task-complete:${ip}`, 20, 60 * 60 * 1000)) {

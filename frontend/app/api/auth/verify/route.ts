@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { checkRateLimit, getClientIp, isValidPhone, isValidOtp } from '@/lib/security'
+import { checkRateLimit, getClientIp, isValidPhone, isValidOtp, generateCsrfToken } from '@/lib/security'
 
 const schema = z.object({
   phone: z.string().min(7).max(20),
@@ -64,6 +64,16 @@ export async function POST(req: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 30, // 30 days
+    path: '/',
+  })
+
+  // Set CSRF token in a readable cookie for double-submit pattern
+  const csrfToken = generateCsrfToken()
+  res.cookies.set('locus_csrf', csrfToken, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
 

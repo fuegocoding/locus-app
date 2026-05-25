@@ -16,11 +16,20 @@ const store = new Map<string, RateLimitEntry>()
 
 /**
  * Returns true if the request is within the allowed rate.
+ * WARNING: This uses an in-memory Map. In serverless/edge environments
+ * (e.g. Vercel), each invocation gets a fresh process, making this
+ * bypassable. For production, use a Redis-backed rate limiter.
+ *
  * @param key    Unique key (e.g. `send-code:${ip}`)
  * @param limit  Max requests per window
  * @param windowMs  Window in milliseconds
  */
 export function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    // eslint-disable-next-line no-console
+    console.warn('[security] In-memory rate limiter active in production. Replace with Redis/Upstash for distributed rate limiting.')
+  }
+
   const now = Date.now()
   const entry = store.get(key)
 
@@ -47,8 +56,19 @@ if (typeof setInterval !== 'undefined') {
 // ---------- IP extraction ----------
 
 export function getClientIp(req: Request): string {
+  // When behind a trusted reverse proxy (Railway, Vercel), the last IP in
+  // the X-Forwarded-For chain is the true client IP. The first entries can
+  // be spoofed by the client.
   const forwarded = req.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
+  if (forwarded) {
+    const ips = forwarded.split(',').map((ip) => ip.trim()).filter(Boolean)
+    if (ips.length > 0) {
+      // Use the last IP (closest to the app) if we trust the proxy.
+      // If you are NOT behind a trusted proxy, disable X-Forwarded-For parsing
+      // and fall back to a direct connection IP.
+      return ips[ips.length - 1]
+    }
+  }
   return 'unknown'
 }
 

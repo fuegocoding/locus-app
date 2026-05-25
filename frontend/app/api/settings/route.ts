@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { validateCsrf } from '@/lib/security'
 
 async function getTokenFromRequest(req: NextRequest): Promise<string | null> {
   return req.cookies.get('locus_token')?.value ?? null
+}
+
+function requireCsrf(req: NextRequest): NextResponse | null {
+  const csrfCookie = req.cookies.get('locus_csrf')?.value
+  if (!validateCsrf(req, csrfCookie)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+  }
+  return null
 }
 
 export async function GET(req: NextRequest) {
@@ -28,6 +37,9 @@ const updateSchema = z.object({
 })
 
 export async function PATCH(req: NextRequest) {
+  const csrfErr = requireCsrf(req)
+  if (csrfErr) return csrfErr
+
   const token = await getTokenFromRequest(req)
   if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 

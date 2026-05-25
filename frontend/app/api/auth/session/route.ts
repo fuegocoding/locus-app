@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
+import { JWT_SECRET } from '@/lib/env'
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'change-me-in-production'
-)
 
 /**
  * Returns the JWT token for socket.io connection.

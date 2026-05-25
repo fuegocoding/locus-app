@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+const _storage = FlutterSecureStorage(
+  aOptions: AndroidOptions(encryptedSharedPreferences: true),
+);
 
 class ApiService {
   final String baseUrl;
@@ -9,18 +13,15 @@ class ApiService {
   ApiService({required this.baseUrl});
 
   Future<void> loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    authToken = prefs.getString('auth_token');
+    authToken = await _storage.read(key: 'auth_token');
   }
   Future<void> saveToken(String token) async {
     authToken = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    await _storage.write(key: 'auth_token', value: token);
   }
   Future<void> clearToken() async {
     authToken = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+    await _storage.delete(key: 'auth_token');
   }
   bool get hasToken => authToken != null;
   Map<String, String> get _headers => {

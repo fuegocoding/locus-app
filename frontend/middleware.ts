@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
+import { JWT_SECRET } from './lib/env'
 
 const PROTECTED_PREFIXES = ['/map', '/settings', '/tasks']
 const AUTH_ONLY_PREFIXES = ['/onboarding', '/profile-setup'] // redirect to /map if already authed
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'change-me-in-production'
-)
 
 function setSecurityHeaders(res: NextResponse): void {
   res.headers.set('X-Frame-Options', 'DENY')

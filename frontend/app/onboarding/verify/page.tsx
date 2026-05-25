@@ -150,10 +150,10 @@ function VerifyForm() {
           </button>
         </div>
 
-        {/* Dev hint */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* Dev hint — only shown when NEXT_PUBLIC_SHOW_DEV_HINT is set */}
+        {process.env.NEXT_PUBLIC_SHOW_DEV_HINT === 'true' && (
           <p className="text-center text-xs text-muted mt-6 bg-surface-raised border border-border rounded-xl px-4 py-2">
-            Dev mode: use code <span className="font-mono text-primary">123456</span>
+            Dev hint: use code <span className="font-mono text-primary">123456</span>
           </p>
         )}
       </div>

@@ -168,3 +168,11 @@ model TaskCompletion {
   @@unique([userId, taskType])
 }
 
+model Report {
+  id         String   @id @default(uuid())
+  reporterId String
+  reportedId String
+  reason     String?
+  createdAt  DateTime @default(now())
+}
+

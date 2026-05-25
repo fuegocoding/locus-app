@@ -1,12 +1,13 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Validate required env vars early — this will throw if JWT_SECRET is missing
+import './config/env';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import path from 'path';
-import fs from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import authRoutes from './routes/auth';
@@ -17,23 +18,34 @@ import { setupSocketHandlers, addConnectedUser } from './socket';
 import { verifyAuthToken } from './services/auth';
 import { cleanupStaleRooms } from './services/proximity';
 import { getRedis, isRedisConnected } from './services/redis';
+import { disconnectDb } from './services/db';
+import { isProd, ALLOWED_ORIGINS } from './config/env';
 import type { ClientToServerEvents, ServerToClientEvents } from './types';
 
 const app = express();
 const httpServer = createServer(app);
 
-const isProd = process.env.NODE_ENV === 'production';
-
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.basemaps.cartocdn.com"],
+      connectSrc: ["'self'", "ws:", "wss:", "https://*.livekit.cloud"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
 // CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 app.use(cors({
-  origin: isProd ? allowedOrigins : '*',
+  origin: isProd ? ALLOWED_ORIGINS : '*',
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -50,6 +62,14 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const socialLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -59,6 +79,7 @@ const generalLimiter = rateLimit({
 });
 
 app.use('/api/auth/verify/', authLimiter);
+app.use('/api/social', socialLimiter);
 app.use(generalLimiter);
 
 app.use(express.json({ limit: '1mb' }));
@@ -68,21 +89,17 @@ app.get('/health', async (_req, res) => {
   const health = {
     status: 'ok',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
     services: {
-      redis: 'unknown',
-      livekit: 'unknown',
+      redis: false,
+      livekit: false,
     },
   };
 
   try {
     await getRedis().ping();
-    health.services.redis = 'connected';
+    health.services.redis = true;
   } catch {
-    health.services.redis = 'disconnected';
-    // Don't fail health check - Redis may not be configured yet
-    health.status = 'ok';
+    health.services.redis = false;
   }
 
   res.status(200).json(health);
@@ -108,14 +125,14 @@ app.get('/', (_req, res) => {
 // Socket.io
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
-    origin: isProd ? allowedOrigins : '*',
+    origin: isProd ? ALLOWED_ORIGINS : '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
   pingTimeout: 60000,
   pingInterval: 25000,
   transports: ['websocket', 'polling'],
-  allowEIO3: true,
+  maxHttpBufferSize: 1e6,
 });
 
 app.set('io', io);
@@ -190,25 +207,24 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 httpServer.listen(PORT, () => {
   console.log(`[Locus Server] Running on port ${PORT}`);
-  console.log(`[Locus Server] Env: ${process.env.NODE_ENV || 'development'}`);
   console.log(`[Locus Server] Health: http://localhost:${PORT}/health`);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('[Server] SIGTERM received, shutting down gracefully');
-  httpServer.close(() => {
+async function shutdown(signal: string) {
+  console.log(`[Server] ${signal} received, shutting down gracefully`);
+  httpServer.close(async () => {
     console.log('[Server] HTTP server closed');
+    try {
+      await disconnectDb();
+      console.log('[Server] Prisma disconnected');
+    } catch (err) {
+      console.error('[Server] Prisma disconnect error:', err);
+    }
     process.exit(0);
   });
-});
+}
 
-process.on('SIGINT', () => {
-  console.log('[Server] SIGINT received, shutting down gracefully');
-  httpServer.close(() => {
-    console.log('[Server] HTTP server closed');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export { app, httpServer, io };

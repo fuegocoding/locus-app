@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+import { JWT_SECRET } from '../config/env';
 
 export interface AuthRequest extends Request {
   userId?: string;

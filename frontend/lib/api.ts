@@ -7,13 +7,34 @@ import type { PrivacyMode } from '@/types'
 
 const BASE = '/api'
 
+function getCsrfToken(): string | undefined {
+  if (typeof document === 'undefined') return undefined
+  const match = document.cookie.match(/(?:^|; )locus_csrf=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : undefined
+}
+
+function isMutating(method?: string): boolean {
+  if (!method) return false
+  return ['POST', 'PATCH', 'DELETE', 'PUT'].includes(method.toUpperCase())
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...init?.headers,
+  }
+
+  // Double-submit CSRF token on state-changing requests
+  if (isMutating(init?.method)) {
+    const csrf = getCsrfToken()
+    if (csrf) {
+      headers['x-csrf-token'] = csrf
+    }
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
+    headers,
     credentials: 'include', // include httpOnly cookies
   })
 

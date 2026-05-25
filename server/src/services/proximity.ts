@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto';
+
 const MIN_RADIUS_KM = 0.5;
 const MAX_RADIUS_KM = 5.0;
 const DENSE_THRESHOLD = 10;
@@ -88,7 +90,7 @@ export function assignProximityRoom(
     }
   }
 
-  const roomId = `proximity:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+  const roomId = `proximity:${Date.now()}:${randomBytes(4).toString('hex')}`;
   const newRoom: ProximityRoomState = {
     roomId,
     participants: new Map([[userId, { joinedAt: Date.now(), latitude, longitude }]]),

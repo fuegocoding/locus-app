@@ -9,3 +9,7 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
 export const prisma = new PrismaClient({ adapter });
+
+export async function disconnectDb(): Promise<void> {
+  await prisma.$disconnect();
+}

@@ -137,6 +137,15 @@ export function setupSocketHandlers(io: TypedServer): void {
       if (!user) return;
 
       if (data.mode === 'convoy' && data.convoyId) {
+        // Verify user is a member of the convoy before switching
+        const membership = await prisma.convoyMembership.findUnique({
+          where: { convoyId_userId: { convoyId: data.convoyId, userId: user.userId } }
+        });
+        if (!membership) {
+          socket.emit('error', { message: 'You are not a member of this convoy', code: 'UNAUTHORIZED' });
+          return;
+        }
+
         if (user.proximityRoomId) {
           const result = proximity.removeFromProximityRoom(user.userId, user.proximityRoomId);
           if (result.shouldDelete) {
@@ -275,6 +284,15 @@ export function setupSocketHandlers(io: TypedServer): void {
       const user = connectedUsers.get(socket.id);
       if (!user || !user.convoyId) return;
 
+      // Verify membership before allowing leave
+      const membership = await prisma.convoyMembership.findUnique({
+        where: { convoyId_userId: { convoyId: user.convoyId, userId: user.userId } }
+      });
+      if (!membership) {
+        socket.emit('error', { message: 'You are not a member of this convoy', code: 'UNAUTHORIZED' });
+        return;
+      }
+
       await redis.updatePresence(
         user.userId, user.latitude, user.longitude,
         user.speed, user.heading, 'open', 'proximity'
@@ -387,7 +405,18 @@ export function setupSocketHandlers(io: TypedServer): void {
     socket.on('user:report', async (data) => {
       const user = connectedUsers.get(socket.id);
       if (!user) return;
-      console.log(`[Report] ${user.userId} reported ${data.targetUserId}: ${data.reason || 'no reason'}`);
+      try {
+        // Cast needed until `prisma generate` is run with the new Report model
+        await (prisma as any).report.create({
+          data: {
+            reporterId: user.userId,
+            reportedId: data.targetUserId,
+            reason: data.reason || null,
+          },
+        });
+      } catch (err) {
+        console.error('[Socket] Failed to persist report:', err);
+      }
     });
 
     socket.on('audio:push-to-talk', async (data) => {
@@ -405,6 +434,16 @@ export function setupSocketHandlers(io: TypedServer): void {
     socket.on('video:start', async () => {
       const user = connectedUsers.get(socket.id);
       if (!user || user.mode !== 'convoy' || !user.convoyId) return;
+
+      // Verify membership before enabling video
+      const membership = await prisma.convoyMembership.findUnique({
+        where: { convoyId_userId: { convoyId: user.convoyId, userId: user.userId } }
+      });
+      if (!membership) {
+        socket.emit('error', { message: 'You are not a member of this convoy', code: 'UNAUTHORIZED' });
+        return;
+      }
+
       user.videoEnabled = true;
       for (const [sid, cu] of connectedUsers) {
         if (cu.convoyId === user.convoyId && cu.userId !== user.userId) {
@@ -416,6 +455,16 @@ export function setupSocketHandlers(io: TypedServer): void {
     socket.on('video:stop', async () => {
       const user = connectedUsers.get(socket.id);
       if (!user || !user.convoyId) return;
+
+      // Verify membership before disabling video
+      const membership = await prisma.convoyMembership.findUnique({
+        where: { convoyId_userId: { convoyId: user.convoyId, userId: user.userId } }
+      });
+      if (!membership) {
+        socket.emit('error', { message: 'You are not a member of this convoy', code: 'UNAUTHORIZED' });
+        return;
+      }
+
       user.videoEnabled = false;
       for (const [sid, cu] of connectedUsers) {
         if (cu.convoyId === user.convoyId && cu.userId !== user.userId) {

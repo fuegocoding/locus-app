@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+import { randomInt } from 'crypto';
+import { JWT_SECRET } from '../config/env';
 
 export interface TokenPayload {
   userId: string;
@@ -25,7 +25,7 @@ export function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(randomInt(0, chars.length));
   }
   return code;
 }
