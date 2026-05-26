@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
 const String _tileUrl =
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
@@ -71,6 +71,7 @@ class MapWidgetState extends State<MapWidget> {
             initialZoom: 15,
             minZoom: 3,
             maxZoom: 19,
+            backgroundColor: const Color(0xFF1A1A3E),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
