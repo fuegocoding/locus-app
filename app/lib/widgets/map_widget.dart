@@ -62,7 +62,11 @@ class MapWidgetState extends State<MapWidget> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _followIfNeeded(state));
 
-    return Stack(
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.red, width: 4),
+      ),
+      child: Stack(
       children: [
         FlutterMap(
           mapController: _mapController,
@@ -71,7 +75,7 @@ class MapWidgetState extends State<MapWidget> {
             initialZoom: 15,
             minZoom: 3,
             maxZoom: 19,
-            backgroundColor: const Color(0xFF1A1A3E),
+            backgroundColor: const Color(0xFFFF0000),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
@@ -216,7 +220,8 @@ class MapWidgetState extends State<MapWidget> {
           ],
         ),
       ],
-    );
+    ),
+  );
   }
 
   void _showUserSheet(BuildContext context, AppState state, user, bool isPinned) {
