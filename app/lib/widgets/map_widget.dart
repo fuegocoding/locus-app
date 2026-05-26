@@ -53,6 +53,27 @@ class MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    try {
+      return _buildMap(context);
+    } catch (e, stack) {
+      debugPrint('MAP WIDGET CRASH: $e\n$stack');
+      return Container(
+        color: const Color(0xFF1A1A3E),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.map, color: Color(0xFF6C63FF), size: 48),
+              SizedBox(height: 12),
+              Text('Map unavailable', style: TextStyle(color: Colors.white70, fontSize: 16)),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildMap(BuildContext context) {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
 
@@ -71,6 +92,7 @@ class MapWidgetState extends State<MapWidget> {
             initialZoom: 15,
             minZoom: 3,
             maxZoom: 19,
+            backgroundColor: const Color(0xFF0D1117),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
