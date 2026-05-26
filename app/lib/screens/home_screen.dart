@@ -56,14 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF0A1A2E),
-              child: const Center(
-                child: Text('MAP', style: TextStyle(color: Color(0xFF6C63FF), fontSize: 24)),
-              ),
-            ),
-          ),
+          Positioned.fill(child: MapWidget(key: _mapKey)),
 
           Positioned(
             top: MediaQuery.of(context).padding.top + 4,
@@ -72,7 +65,64 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildTopBar(state, theme),
           ),
 
+          if (!state.isOnline) _buildOfflineBanner(theme),
+          if (showAudioError) _buildAudioErrorBanner(state, theme),
+          if (state.pinnedByMessage != null) _buildPinnedBanner(state, theme),
+
+          if (state.mode == 'proximity')
+            ProximityOverlay(topOffset: proximityTop)
+          else if (state.mode == 'convoy') ...[
+            const ConvoyPanel(),
+          ],
+
+          _buildInviteBanner(state, theme),
+
+          Positioned(
+            bottom: _floatBottom(bottomSafe),
+            left: 16,
+            child: _buildMicCircle(state, theme),
+          ),
+
+          Positioned(
+            bottom: _floatBottom(bottomSafe),
+            right: 16,
+            child: Speedometer(
+              speedKmh: state.speed,
+              unit: state.resolvedSpeedUnit,
+              size: 72,
+            ),
+          ),
+
+          if (_mapKey.currentState != null &&
+              !_mapKey.currentState!.followingUser &&
+              state.latitude != 0)
+            Positioned(
+              bottom: _floatBottom(bottomSafe) + 80,
+              right: 16,
+              child: Material(
+                color: const Color(0xFF1A1A3E).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(28),
+                elevation: 4,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () => _mapKey.currentState?.recenterOnUser(state),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.3)),
+                    ),
+                    child: const Icon(Icons.my_location, color: Color(0xFFC4B5FD), size: 22),
+                  ),
+                ),
+              ),
+            ),
+
           _buildBottomBar(state, theme, bottomSafe),
+
+          if (_isHolding && state.pushToTalk && !_swipedToLock)
+            _buildSwipeIndicator(theme, bottomSafe),
         ],
       ),
     );
