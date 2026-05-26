@@ -49,6 +49,17 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="locus.app" android:pathPrefix="/convoy/" />
                 <data android:scheme="https" android:host="locus.wtf" android:pathPrefix="/convoy/" />
+                <data android:scheme="https" android:host="locus.app" android:pathPrefix="/join/" />
+                <data android:scheme="https" android:host="locus.wtf" android:pathPrefix="/join/" />
+            </intent-filter>
+
+            <!-- Custom scheme deep link -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="locus" android:host="convoy" />
+                <data android:scheme="locus" android:host="join" />
             </intent-filter>
 
             <!-- Deep link for user referrals / profile links -->

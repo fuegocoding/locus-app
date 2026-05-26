@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:app_links/app_links.dart';
 
 class AppState extends ChangeNotifier {
   static const String _devUrl = 'http://localhost:3001';
@@ -43,6 +44,7 @@ class AppState extends ChangeNotifier {
   String? _livekitToken;
   String? _livekitServerUrl;
   String? _pinnedByMessage;
+  String? _pendingConvoyCode;
 
   List<dynamic> _friends = [];
   List<dynamic> _pendingInvites = [];
@@ -54,10 +56,7 @@ class AppState extends ChangeNotifier {
 
   AppState({String? serverUrl})
       : apiService = ApiService(
-          baseUrl: serverUrl ??
-              (kDebugMode
-                  ? (kIsWeb ? _devUrl : _prodUrl)
-                  : _prodUrl),
+          baseUrl: serverUrl ?? _prodUrl,
         );
 
   User? get user => _user;
@@ -99,6 +98,17 @@ class AppState extends ChangeNotifier {
   bool get isLoadingFriends => _isLoadingFriends;
   bool get isLoadingInvites => _isLoadingInvites;
   String? get pinnedByMessage => _pinnedByMessage;
+  String? get pendingConvoyCode => _pendingConvoyCode;
+
+  void setPendingConvoyCode(String? code) {
+    _pendingConvoyCode = code;
+    notifyListeners();
+  }
+
+  void clearPendingConvoyCode() {
+    _pendingConvoyCode = null;
+    notifyListeners();
+  }
 
   Future<void> init() async {
     await apiService.loadToken();
@@ -163,7 +173,34 @@ class AppState extends ChangeNotifier {
         }
       }
     }
+    _startDeepLinkListener();
     notifyListeners();
+  }
+
+  void _startDeepLinkListener() {
+    final appLinks = AppLinks();
+    appLinks.getInitialLink().then(_handleDeepLink);
+    appLinks.uriLinkStream.listen(_handleDeepLink);
+  }
+
+  void _handleDeepLink(Uri uri) {
+    final host = uri.host;
+    final path = uri.path;
+    final segments = uri.pathSegments;
+
+    String? code;
+    if (host == 'convoy' && segments.length >= 1) {
+      code = segments.last;
+    } else if ((host == 'locus.wtf' || host == 'locus.app') && path.startsWith('/convoy/') && segments.length >= 2) {
+      code = segments[1];
+    } else if ((host == 'locus.wtf' || host == 'locus.app') && path.startsWith('/join/') && segments.length >= 2) {
+      code = segments[1];
+    }
+
+    if (code != null && code.isNotEmpty) {
+      _pendingConvoyCode = code;
+      notifyListeners();
+    }
   }
 
   Future<void> sendVerificationCode(String phone) async {
@@ -422,7 +459,7 @@ class AppState extends ChangeNotifier {
     if (_livekitServerUrl != null && _livekitToken != null) {
       try {
         String url = _livekitServerUrl!;
-        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        if (defaultTargetPlatform == TargetPlatform.android) {
           url = url.replaceAll('localhost', '10.0.2.2').replaceAll('127.0.0.1', '10.0.2.2');
         }
         await audioService.connect(url, _livekitToken!);
@@ -558,7 +595,6 @@ class AppState extends ChangeNotifier {
 
   // Push Notifications Setup
   Future<void> initPushNotifications() async {
-    if (kIsWeb) return;
     try {
       await Firebase.initializeApp();
       final messaging = FirebaseMessaging.instance;

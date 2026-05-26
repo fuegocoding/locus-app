@@ -93,10 +93,10 @@
   - [x] Personal QR code on profile/settings (others scan to add you)
   - [x] QR code reader in Find People screen (share + scan buttons below search bar)
   - [x] Also accessible from the existing Share button in the top bar
-- [ ] QR code feature: the scanner is planned/stubbed but camera doesn't work — just says "coming soon". Make camera scanning functional.
-  - [ ] Remove duplicate QR code button in the friends screen
-- [ ] Rename "Prosocial club" → "friend list" throughout the app (no mentions of Prosocial club anywhere)
-- [ ] Convoy links: deep link into the app with a confirmation popup to join the convoy (replace clumsy web-based integration)
+- [x] QR code feature: the scanner is planned/stubbed but camera doesn't work — just says "coming soon". Make camera scanning functional.
+  - [x] Remove duplicate QR code button in the friends screen
+- [x] Rename "Prosocial club" → "friend list" throughout the app (no mentions of Prosocial club anywhere)
+- [x] Convoy links: deep link into the app with a confirmation popup to join the convoy (replace clumsy web-based integration)
 - [ ] Remove web app and all web platform support entirely
 
 ## 🚀 Future Roadmap

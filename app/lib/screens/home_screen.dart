@@ -53,6 +53,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!state.isOnline) proximityTop += 38;
     if (showAudioError) proximityTop += 38;
 
+    if (state.pendingConvoyCode != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showJoinConvoyDialog(context, state, state.pendingConvoyCode!);
+      });
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117),
       body: Stack(
@@ -856,6 +862,59 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             child: const Text('Join'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showJoinConvoyDialog(BuildContext context, AppState state, String code) {
+    state.clearPendingConvoyCode();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Join Convoy', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'You\'ve been invited to join a convoy.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D1117),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF30363D)),
+              ),
+              child: Column(
+                children: [
+                  const Text('INVITE CODE', style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.5)),
+                  const SizedBox(height: 6),
+                  Text(code, style: const TextStyle(fontFamily: 'monospace', fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 3)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C63FF)),
+            onPressed: () {
+              state.joinConvoy(code);
+              Navigator.pop(context);
+            },
+            child: const Text('Join Convoy'),
           ),
         ],
       ),

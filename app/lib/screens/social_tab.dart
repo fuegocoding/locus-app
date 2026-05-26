@@ -68,28 +68,182 @@ class _SocialTabScreenState extends State<SocialTabScreen> {
     );
     if (result == null || !mounted) return;
 
-    String? username;
-    final locusWtfPrefix = RegExp(r'locus\.wtf/([a-zA-Z0-9_]+)');
-    final locusAppPrefix = RegExp(r'locus\.app/(join|convoy)/([a-zA-Z0-9_]+)');
-    final match = locusWtfPrefix.firstMatch(result);
-    if (match != null) {
-      username = match.group(1);
-    } else {
-      final joinMatch = locusAppPrefix.firstMatch(result);
-      if (joinMatch != null) {
-        username = joinMatch.group(2);
-      }
+    final convoyPattern = RegExp(r'locus\.(wtf|app)/(convoy|join)/([a-zA-Z0-9_]+)');
+    final convoyMatch = convoyPattern.firstMatch(result);
+    if (convoyMatch != null) {
+      final code = convoyMatch.group(3)!;
+      if (!mounted) return;
+      _showConvoyJoinDialog(code);
+      return;
     }
 
-    if (username != null) {
-      _searchController.text = username;
-      _searchQuery = username;
-      _onSearchChanged(username, context.read<AppState>());
-    } else {
-      _searchController.text = result;
-      _searchQuery = result;
-      _onSearchChanged(result, context.read<AppState>());
+    final userPattern = RegExp(r'locus\.wtf/([a-zA-Z0-9_]+)');
+    final userMatch = userPattern.firstMatch(result);
+    if (userMatch != null) {
+      _lookupAndFollow(userMatch.group(1)!);
+      return;
     }
+
+    // Fallback: treat raw text as search query
+    _searchController.text = result;
+    _searchQuery = result;
+    _onSearchChanged(result, context.read<AppState>());
+  }
+
+  void _showConvoyJoinDialog(String code) {
+    final state = context.read<AppState>();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Join Convoy', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.groups, color: Color(0xFFC4B5FD), size: 48),
+            const SizedBox(height: 16),
+            const Text('You scanned a convoy invite.', style: TextStyle(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D1117),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF30363D)),
+              ),
+              child: Text(
+                code,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 3),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C63FF)),
+            onPressed: () {
+              state.joinConvoy(code);
+              Navigator.pop(ctx);
+            },
+            child: const Text('Join Convoy'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _lookupAndFollow(String username) async {
+    final state = context.read<AppState>();
+    final results = await state.searchUsers(username);
+
+    if (!mounted) return;
+
+    final matchedUser = results.cast<Map<String, dynamic>?>().firstWhere(
+      (u) => (u?['displayName']?.toString().toLowerCase() ?? '') == username.toLowerCase(),
+      orElse: () => null,
+    );
+
+    if (matchedUser == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not found')),
+      );
+      return;
+    }
+
+    _showFollowDialog(state, matchedUser);
+  }
+
+  void _showFollowDialog(AppState state, Map<String, dynamic> user) {
+    final displayName = user['displayName'] ?? 'Unknown';
+    final userId = user['id'] as String;
+    final bool isFollowing = user['isFollowing'] == true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Scanned User', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 36,
+              backgroundColor: const Color(0xFF21262D),
+              child: Text(
+                displayName[0].toUpperCase(),
+                style: const TextStyle(fontSize: 28, color: Color(0xFFC4B5FD)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '@$displayName',
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            if (isFollowing)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'You are already following this user',
+                  style: TextStyle(color: Color(0xFF10B981), fontSize: 13),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          ),
+          if (!isFollowing)
+            StatefulBuilder(
+              builder: (ctx, setDialogState) {
+                bool loading = false;
+                return ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C63FF)),
+                  onPressed: loading
+                      ? null
+                      : () async {
+                          setDialogState(() => loading = true);
+                          final result = await state.apiService.followUser(userId);
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          if (!mounted) return;
+                          final isFriend = result['isFriend'] == true;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isFriend
+                                    ? '@$displayName is now your friend!'
+                                    : 'Follow request sent to @$displayName',
+                              ),
+                              backgroundColor: isFriend ? const Color(0xFF10B981) : const Color(0xFF6C63FF),
+                            ),
+                          );
+                          state.loadFriends();
+                        },
+                  child: loading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Follow'),
+                );
+              },
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -140,24 +294,15 @@ class _SocialTabScreenState extends State<SocialTabScreen> {
                   hintText: 'Search by username...',
                   hintStyle: const TextStyle(color: Colors.white38),
                   prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.qr_code_scanner, color: Color(0xFFC4B5FD), size: 22),
-                        tooltip: 'Scan QR',
-                        onPressed: _scanQrCode,
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        IconButton(
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
                           icon: const Icon(Icons.clear, color: Colors.white54),
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('', state);
                           },
-                        ),
-                    ],
-                  ),
+                        )
+                      : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),

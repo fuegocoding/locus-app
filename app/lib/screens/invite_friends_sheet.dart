@@ -128,7 +128,7 @@ class _InviteFriendsSheetState extends State<InviteFriendsSheet> {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Go to the Prosocial Hub to find and follow users.',
+            'Go to Find People to search for and follow users.',
             style: TextStyle(color: Colors.white24, fontSize: 11),
           ),
         ],

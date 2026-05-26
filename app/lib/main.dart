@@ -66,18 +66,10 @@ class LocusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
     return MaterialApp(
       title: 'Locus',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(context, Brightness.dark),
-      builder: (context, child) {
-        if (!isMobile && kIsWeb) {
-          return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 430),
-            child: Container(decoration: BoxDecoration(border: Border.all(color: const Color(0xFF30363D))), child: child!)));
-        }
-        return child!;
-      },
       home: const AppEntry(),
     );
   }
@@ -91,7 +83,7 @@ class LocusApp extends StatelessWidget {
         backgroundColor: Color(0xFF161B22), selectedItemColor: Color(0xFF6C63FF), unselectedItemColor: Color(0xFF8B949E)),
     );
 
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       return base.copyWith(
         appBarTheme: AppBarTheme(
           backgroundColor: const Color(0xFF1A1D23).withOpacity(0.7),

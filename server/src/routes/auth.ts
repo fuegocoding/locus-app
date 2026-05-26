@@ -267,6 +267,11 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response): Pro
         res.status(400).json({ error: 'Display name can only contain letters, numbers, and underscores' });
         return;
       }
+      const reserved = new Set(['convoy', 'join', 'admin', 'locus', 'system', 'mod', 'support']);
+      if (reserved.has(newName.toLowerCase())) {
+        res.status(400).json({ error: 'Username is reserved' });
+        return;
+      }
       const existingUser = await prisma.user.findFirst({
         where: {
           displayName: {
@@ -328,6 +333,11 @@ router.post('/check-username', async (req: Request, res: Response): Promise<void
     }
     if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
       res.json({ available: false, reason: 'Username can only contain letters, numbers, and underscores' });
+      return;
+    }
+    const reserved = new Set(['convoy', 'join', 'admin', 'locus', 'system', 'mod', 'support']);
+    if (reserved.has(username.trim().toLowerCase())) {
+      res.json({ available: false, reason: 'Username is reserved' });
       return;
     }
     const existing = await prisma.user.findFirst({
