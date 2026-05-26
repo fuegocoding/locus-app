@@ -41,12 +41,13 @@ router.post('/verify/send', async (req: Request, res: Response): Promise<void> =
     }
     phone = normalizePhoneNumber(rawPhone);
 
-    if (!isProd) {
-      // Development mode: accept any phone, use fixed code
+    const isTestNumber = phone.startsWith('+1555');
+    if (!isProd || isTestNumber) {
+      // Development mode or test number: accept any phone, use fixed code
       const r = getRedis();
       await r.set(`verify:${phone}`, '123456', 'EX', 300);
-      console.log(`[Auth] Dev mode: verification code for ${phone} is 123456`);
-      res.json({ success: true, message: 'Verification code sent (dev mode: use 123456)' });
+      console.log(`[Auth] Test/Dev mode: verification code for ${phone} is 123456`);
+      res.json({ success: true, message: 'Verification code sent (test mode: use 123456)' });
       return;
     }
 
@@ -89,12 +90,15 @@ router.post('/verify/check', async (req: Request, res: Response): Promise<void> 
       return;
     }
     const phone = normalizePhoneNumber(rawPhone);
+    const isTestNumber = phone.startsWith('+1555');
 
     // First check Redis (handles dev mode and Twilio fallback)
     const redisCheck = getRedis();
     const storedCode = await redisCheck.get(`verify:${phone}`);
-    if (storedCode === code) {
-      await redisCheck.del(`verify:${phone}`);
+    if (storedCode === code || (isTestNumber && code === '123456')) {
+      if (storedCode === code) {
+        await redisCheck.del(`verify:${phone}`);
+      }
     } else if (!isProd) {
       // Dev mode: no valid Redis code
       res.status(400).json({ error: 'Invalid code' });

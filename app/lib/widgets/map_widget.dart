@@ -63,9 +63,6 @@ class MapWidgetState extends State<MapWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _followIfNeeded(state));
 
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.red, width: 4),
-      ),
       child: Stack(
       children: [
         FlutterMap(
@@ -75,7 +72,7 @@ class MapWidgetState extends State<MapWidget> {
             initialZoom: 15,
             minZoom: 3,
             maxZoom: 19,
-            backgroundColor: const Color(0xFFFF0000),
+            backgroundColor: const Color(0xFF0D1117),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),

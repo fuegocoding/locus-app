@@ -95,7 +95,8 @@ class ApiService {
   Future<List<dynamic>> getFriends() async {
     final r = await http.get(Uri.parse('$baseUrl/api/social/friends'), headers: _headers);
     if (r.statusCode == 200) return jsonDecode(r.body) as List<dynamic>;
-    throw Exception('Failed to get friends list');
+    print('[ApiService] getFriends failed: status=${r.statusCode} body=${r.body}');
+    throw Exception('Failed to get friends list: status=${r.statusCode} body=${r.body}');
   }
 
   Future<void> registerDeviceToken(String token) async {
@@ -119,7 +120,8 @@ class ApiService {
   Future<List<dynamic>> getPendingInvites() async {
     final r = await http.get(Uri.parse('$baseUrl/api/social/convoy/invites'), headers: _headers);
     if (r.statusCode == 200) return jsonDecode(r.body) as List<dynamic>;
-    throw Exception('Failed to fetch pending invites');
+    print('[ApiService] getPendingInvites failed: status=${r.statusCode} body=${r.body}');
+    throw Exception('Failed to fetch pending invites: status=${r.statusCode} body=${r.body}');
   }
 
   Future<void> respondToInvite(String inviteId, String status) async {

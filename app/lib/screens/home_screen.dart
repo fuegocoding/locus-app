@@ -54,10 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (showAudioError) proximityTop += 38;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0D1117),
       body: Stack(
         children: [
-          Positioned.fill(child: MapWidget(key: _mapKey)),
-
+          Positioned.fill(
+            child: MapWidget(key: _mapKey),
+          ),
           Positioned(
             top: MediaQuery.of(context).padding.top + 4,
             left: 8,
@@ -65,17 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildTopBar(state, theme),
           ),
 
-          if (!state.isOnline) _buildOfflineBanner(theme),
-          if (showAudioError) _buildAudioErrorBanner(state, theme),
-          if (state.pinnedByMessage != null) _buildPinnedBanner(state, theme),
-
           if (state.mode == 'proximity')
             ProximityOverlay(topOffset: proximityTop)
           else if (state.mode == 'convoy') ...[
             const ConvoyPanel(),
           ],
-
-          _buildInviteBanner(state, theme),
 
           Positioned(
             bottom: _floatBottom(bottomSafe),
@@ -120,9 +116,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
           _buildBottomBar(state, theme, bottomSafe),
-
-          if (_isHolding && state.pushToTalk && !_swipedToLock)
-            _buildSwipeIndicator(theme, bottomSafe),
         ],
       ),
     );

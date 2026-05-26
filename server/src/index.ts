@@ -56,7 +56,7 @@ app.set('trust proxy', 1);
 // Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: isProd ? 100 : 1000,
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -64,7 +64,7 @@ const authLimiter = rateLimit({
 
 const socialLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 60,
+  max: isProd ? 1000 : 10000,
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -72,7 +72,7 @@ const socialLimiter = rateLimit({
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: isProd ? 2000 : 20000,
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
