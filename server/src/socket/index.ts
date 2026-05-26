@@ -538,7 +538,16 @@ async function handleProximityUpdate(
   const oldRoomId = user.proximityRoomId;
 
   if (user.proximityRoomId && user.proximityRoomId !== roomId) {
-    proximity.removeFromProximityRoom(user.userId, user.proximityRoomId);
+    const result = proximity.removeFromProximityRoom(user.userId, user.proximityRoomId);
+    if (result.shouldDelete) {
+      await redis.deleteRoom(user.proximityRoomId);
+    }
+    for (const participantId of result.remainingParticipants) {
+      const sid = getSocketIdByUserId(participantId);
+      if (sid) {
+        io.to(sid).emit('presence:remove', { userId: user.userId });
+      }
+    }
   }
 
   user.proximityRoomId = roomId;
@@ -573,6 +582,32 @@ async function handleProximityUpdate(
   socket.emit('presence:neighbors', mappedNearbyUsers as any);
   for (const v of volumeUpdates) {
     socket.emit('audio:volume-update', v);
+  }
+
+  // Broadcast this user's updated presence to all nearby connected users
+  const displayName = user.anonymousMode
+    ? getAnonymousName(user.userId)
+    : (user.displayName || `User_${user.userId.slice(0, 6)}`);
+
+  const presenceData = {
+    userId: user.userId,
+    latitude: user.latitude,
+    longitude: user.longitude,
+    speed: user.speed,
+    heading: user.heading,
+    privacyMode: user.privacyMode as any,
+    mode: user.mode,
+    convoyId: user.convoyId,
+    displayName,
+    anonymousMode: user.anonymousMode,
+    timestamp: Date.now(),
+  };
+
+  for (const nearby of nearbyUsers) {
+    const nearbySocketId = getSocketIdByUserId(nearby.userId);
+    if (nearbySocketId) {
+      io.to(nearbySocketId).emit('presence:update', presenceData);
+    }
   }
 }
 

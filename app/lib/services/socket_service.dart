@@ -5,6 +5,7 @@ import '../models/user.dart';
 class SocketService {
   io.Socket? _socket;
   final _presenceController = StreamController<List<PresenceUpdate>>.broadcast();
+  final _presenceRemoveController = StreamController<String>.broadcast();
   final _volumeController = StreamController<Map<String, double>>.broadcast();
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
   final _convoyController = StreamController<Map<String, dynamic>>.broadcast();
@@ -17,6 +18,7 @@ class SocketService {
   final _pinnedYouController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
+  Stream<String> get presenceRemoveStream => _presenceRemoveController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
   Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
   Stream<Map<String, dynamic>> get convoyStream => _convoyController.stream;
@@ -63,7 +65,9 @@ class SocketService {
     });
 
     _socket!.on('presence:remove', (data) {
-      // handled by state
+      if (data != null && data['userId'] != null) {
+        _presenceRemoveController.add(data['userId'] as String);
+      }
     });
 
     _socket!.on('audio:volume-update', (data) {
@@ -200,5 +204,21 @@ class SocketService {
   void disconnect() {
     _socket?.disconnect();
     _socket?.dispose();
+  }
+
+  void dispose() {
+    disconnect();
+    _presenceController.close();
+    _presenceRemoveController.close();
+    _volumeController.close();
+    _speakingController.close();
+    _convoyController.close();
+    _audioTokenController.close();
+    _errorController.close();
+    _videoController.close();
+    _inviteController.close();
+    _accountDeletedController.close();
+    _friendLocationController.close();
+    _pinnedYouController.close();
   }
 }

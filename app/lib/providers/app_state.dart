@@ -269,6 +269,7 @@ class AppState extends ChangeNotifier {
   }
 
   StreamSubscription<List<PresenceUpdate>>? _presenceSub;
+  StreamSubscription<String>? _presenceRemoveSub;
   StreamSubscription<Map<String, double>>? _volumeSub;
   StreamSubscription<Map<String, bool>>? _speakingSub;
   StreamSubscription<Map<String, dynamic>>? _convoySub;
@@ -297,6 +298,12 @@ class AppState extends ChangeNotifier {
           _nearbyUsers.add(u);
         }
       }
+      notifyListeners();
+    });
+
+    _presenceRemoveSub?.cancel();
+    _presenceRemoveSub = socketService.presenceRemoveStream.listen((userId) {
+      _nearbyUsers.removeWhere((x) => x.userId == userId);
       notifyListeners();
     });
 
@@ -710,7 +717,8 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
-    socketService.disconnect();
+    _presenceRemoveSub?.cancel();
+    socketService.dispose();
     locationService.dispose();
     audioService.dispose();
     super.dispose();

@@ -675,15 +675,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _nearbyTile(dynamic user, AppState state) {
+    final userId = user.userId as String;
+    final initial = userId.isNotEmpty ? userId.substring(0, 1).toUpperCase() : '?';
+    final shortId = userId.length > 6 ? userId.substring(0, 6) : userId;
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: const Color(0xFF6C63FF).withOpacity(0.2),
         child: Text(
-          user.userId.substring(0, 1).toUpperCase(),
+          initial,
           style: const TextStyle(color: Color(0xFFC4B5FD)),
         ),
       ),
-      title: Text(user.displayName ?? 'User ${user.userId.substring(0, 6)}',
+      title: Text(user.displayName ?? 'User $shortId',
           style: const TextStyle(color: Colors.white)),
       subtitle: Text(
         '${user.latitude.toStringAsFixed(4)}, ${user.longitude.toStringAsFixed(4)}',

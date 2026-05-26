@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
 const String _tileUrl =
-    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key});
@@ -114,8 +114,12 @@ class MapWidgetState extends State<MapWidget> {
                   ),
                 ),
                 ...state.friendLocations.map((f) {
+                  final fLat = (f['latitude'] as num?)?.toDouble() ?? 0.0;
+                  final fLng = (f['longitude'] as num?)?.toDouble() ?? 0.0;
+                  final fUserId = f['userId']?.toString() ?? '';
+                  final fShortId = fUserId.length > 8 ? fUserId.substring(0, 8) : fUserId;
                   return Marker(
-                    point: LatLng(f['latitude'] as double, f['longitude'] as double),
+                    point: LatLng(fLat, fLng),
                     width: 44,
                     height: 56,
                     child: Column(
@@ -140,7 +144,7 @@ class MapWidgetState extends State<MapWidget> {
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
-                            f['displayName'] ?? f['userId'].toString().substring(0, 8),
+                            f['displayName'] ?? fShortId,
                             style: const TextStyle(fontSize: 8, color: Colors.white70),
                           ),
                         ),
@@ -152,9 +156,10 @@ class MapWidgetState extends State<MapWidget> {
                   final isSpeaking = state.speaking[user.userId] == true;
                   final isPinned = state.user?.pins.contains(user.userId) ?? false;
                   final volume = state.volumes[user.userId] ?? 0.5;
+                  final userShortId = user.userId.length > 8 ? user.userId.substring(0, 8) : user.userId;
                   final displayName = (user.displayName != null && user.displayName!.isNotEmpty)
                       ? user.displayName!
-                      : user.userId.substring(0, 8);
+                      : userShortId;
 
                   return Marker(
                     point: LatLng(user.latitude, user.longitude),
@@ -222,9 +227,10 @@ class MapWidgetState extends State<MapWidget> {
   }
 
   void _showUserSheet(BuildContext context, AppState state, user, bool isPinned) {
+    final userShortId = user.userId.length > 8 ? user.userId.substring(0, 8) : user.userId;
     final displayName = (user.displayName != null && user.displayName!.isNotEmpty)
         ? user.displayName!
-        : user.userId.substring(0, 8);
+        : userShortId;
     showModalBottomSheet(
       context: context,
       builder: (_) => SafeArea(
