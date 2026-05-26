@@ -18,17 +18,13 @@ class ConvoyPanel extends StatelessWidget {
 
     final inviteUrl = 'https://locus.wtf/convoy/${convoy.inviteCode}';
 
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 60,
-      left: 16,
-      right: 16,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.2)),
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.2)),
+      ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -89,8 +85,7 @@ class ConvoyPanel extends StatelessWidget {
 
           ],
         ),
-      ),
-    );
+      );
   }
 
   void _showQR(BuildContext context, String code, String url) {

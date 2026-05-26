@@ -5,11 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../providers/app_state.dart';
 
 class ProximityOverlay extends StatelessWidget {
-  /// Distance from the top of the screen to place the card.
-  /// Caller accounts for status-bar + top-bar + any active banners.
-  final double topOffset;
-
-  const ProximityOverlay({super.key, required this.topOffset});
+  const ProximityOverlay({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,16 +13,12 @@ class ProximityOverlay extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (state.nearbyUsers.isEmpty) {
-      return Positioned(
-        top: topOffset,
-        left: 16,
-        right: 16,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(12),
-          ),
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(12),
+        ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -54,8 +46,7 @@ class ProximityOverlay extends StatelessWidget {
               _shareButton(context, state, theme),
             ],
           ),
-        ),
-      );
+        );
     }
 
     return const SizedBox.shrink();

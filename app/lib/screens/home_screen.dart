@@ -67,11 +67,29 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildTopBar(state, theme),
           ),
 
+          if (!state.isOnline) _buildOfflineBanner(theme),
+          if (showAudioError) _buildAudioErrorBanner(state, theme),
+          if (state.pinnedByMessage != null) _buildPinnedBanner(state, theme),
+          _buildInviteBanner(state, theme),
+
           if (state.mode == 'proximity')
-            ProximityOverlay(topOffset: proximityTop)
+            Positioned(
+              top: proximityTop,
+              left: 16,
+              right: 16,
+              child: const ProximityOverlay(),
+            )
           else if (state.mode == 'convoy') ...[
-            const ConvoyPanel(),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 60,
+              left: 16,
+              right: 16,
+              child: const ConvoyPanel(),
+            ),
           ],
+
+          if (state.pushToTalk && _isHolding && !_swipedToLock)
+            _buildSwipeIndicator(theme, bottomSafe),
 
           Positioned(
             bottom: _floatBottom(bottomSafe),
