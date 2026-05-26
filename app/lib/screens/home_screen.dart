@@ -90,16 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildMicCircle(state, theme),
           ),
 
-          Positioned(
-            bottom: _floatBottom(bottomSafe),
-            right: 16,
-            child: Speedometer(
-              speedKmh: state.speed,
-              unit: state.resolvedSpeedUnit,
-              size: 72,
-            ),
-          ),
-
           _buildBottomBar(state, theme, bottomSafe),
 
           if (_isHolding && state.pushToTalk && !_swipedToLock)
