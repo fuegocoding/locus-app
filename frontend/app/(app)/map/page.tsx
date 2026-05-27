@@ -1,5 +1,9 @@
-import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 export default function MapPage() {
-  redirect('/settings')
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Link href="/settings" className="text-primary hover:underline">Go to Settings</Link>
+    </div>
+  )
 }

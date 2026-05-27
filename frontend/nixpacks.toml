@@ -8,4 +8,4 @@ cmds = ["npm ci"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "bash start.sh"
+cmd = "node node_modules/next/dist/bin/next start"
