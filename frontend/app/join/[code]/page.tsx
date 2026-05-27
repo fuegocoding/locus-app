@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Users, ArrowRight, Download, UserPlus } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface PageProps {
   params: { code: string }
@@ -36,16 +37,12 @@ async function getPublicUser(username: string) {
 export default async function JoinPage({ params }: PageProps) {
   const { code } = params
   
-  // Try convoy invite first
   const convoy = await getConvoy(code)
-  
-  // If not found, check if it's a user referral/friend code
   const publicUser = !convoy ? await getPublicUser(code) : null
 
   return (
     <div className="min-h-screen bg-background grid-bg flex items-center justify-center px-4 relative">
       <div className="relative w-full max-w-sm text-center space-y-8">
-        {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-2 group">
           <Logo className="w-8 h-8 text-primary transition-transform duration-200 group-hover:scale-105" />
           <span className="text-xl font-black text-foreground tracking-tight">Locus</span>
@@ -53,7 +50,6 @@ export default async function JoinPage({ params }: PageProps) {
 
         {convoy ? (
           <>
-            {/* Convoy card */}
             <div className="bg-surface-raised border border-border rounded-panel p-6">
               <div className="w-14 h-14 rounded-full bg-convoy/20 border-2 border-convoy/40 flex items-center justify-center mx-auto mb-4">
                 <Users className="w-6 h-6 text-convoy" />
@@ -69,30 +65,31 @@ export default async function JoinPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* CTAs */}
             <div className="space-y-3">
-              <Link
-                href={`/map?join=${code}`}
-                className="flex items-center justify-center gap-2 w-full py-4 bg-convoy text-white rounded-xl font-bold text-base hover:bg-convoy/90 transition-all shadow-sm"
-              >
-                Join in browser <ArrowRight className="w-4 h-4" />
-              </Link>
-              <p className="text-xs text-muted">or</p>
-              <div className="glass rounded-xl p-4 text-left space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Download className="w-4 h-4 text-primary" />
-                  Get the app for the best experience
-                </div>
-                <div className="flex gap-2">
-                  <AppStoreBadge label="App Store" />
-                  <AppStoreBadge label="Google Play" />
+              <p className="text-sm text-muted">
+                Open Locus on your phone to join this convoy.
+              </p>
+              <div className="flex justify-center">
+                <div className="bg-white p-3 rounded-xl shadow-lg inline-block">
+                  <QRCodeSVG
+                    value={`https://locus.wtf/convoy/${code}`}
+                    size={140}
+                    level="M"
+                    fgColor="#0D1117"
+                  />
                 </div>
               </div>
+              <p className="text-xs text-muted">Scan to open in the app</p>
+              <Link
+                href="/app/download"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-convoy text-white rounded-xl font-bold text-sm hover:bg-convoy/90 transition-all"
+              >
+                Download Locus <Download className="w-4 h-4" />
+              </Link>
             </div>
           </>
         ) : publicUser ? (
           <>
-            {/* User/Friend Referral card */}
             <div className="bg-surface-raised border border-border rounded-panel p-6">
               <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center mx-auto mb-4">
                 <UserPlus className="w-6 h-6 text-primary-light" />
@@ -113,29 +110,31 @@ export default async function JoinPage({ params }: PageProps) {
               </p>
             </div>
 
-            {/* CTAs */}
             <div className="space-y-3">
-              <Link
-                href={`/onboarding?ref=${publicUser.displayName}`}
-                className="flex items-center justify-center gap-2 w-full py-4 bg-primary text-white rounded-xl font-bold text-base hover:bg-primary-dim transition-all shadow-sm"
-              >
-                Get Started <ArrowRight className="w-4 h-4" />
-              </Link>
-              <div className="glass rounded-xl p-4 text-left space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Download className="w-4 h-4 text-primary" />
-                  Install the mobile app
-                </div>
-                <div className="flex gap-2">
-                  <AppStoreBadge label="App Store" />
-                  <AppStoreBadge label="Google Play" />
+              <p className="text-sm text-muted">
+                Download Locus on your phone to get started.
+              </p>
+              <div className="flex justify-center">
+                <div className="bg-white p-3 rounded-xl shadow-lg inline-block">
+                  <QRCodeSVG
+                    value="https://locus.wtf/app/download"
+                    size={140}
+                    level="M"
+                    fgColor="#0D1117"
+                  />
                 </div>
               </div>
+              <p className="text-xs text-muted">Scan to download on your phone</p>
+              <Link
+                href="/app/download"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-dim transition-all"
+              >
+                Download Locus <Download className="w-4 h-4" />
+              </Link>
             </div>
           </>
         ) : (
           <>
-            {/* Invite not found */}
             <div className="glass rounded-panel p-8 space-y-4">
               <div className="text-5xl">🔍</div>
               <h1 className="text-xl font-bold text-foreground">Invite not found</h1>
@@ -155,15 +154,6 @@ export default async function JoinPage({ params }: PageProps) {
           </>
         )}
       </div>
-    </div>
-  )
-}
-
-function AppStoreBadge({ label }: { label: string }) {
-  return (
-    <div className="flex-1 bg-surface border border-border rounded-xl px-3 py-2 text-center cursor-pointer hover:border-border-bright transition-colors">
-      <p className="text-[10px] text-muted">Available on</p>
-      <p className="text-xs font-semibold text-foreground">{label}</p>
     </div>
   )
 }
