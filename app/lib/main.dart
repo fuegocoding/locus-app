@@ -124,7 +124,7 @@ class _AppEntryState extends State<AppEntry> {
 
   Future<void> _init() async {
     await context.read<AppState>().init();
-    setState(() => _initialized = true);
+    if (mounted) setState(() => _initialized = true);
   }
 
   @override

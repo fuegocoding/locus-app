@@ -111,6 +111,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> init() async {
+    try {
     await apiService.loadToken();
     final prefs = await SharedPreferences.getInstance();
 
@@ -175,6 +176,11 @@ class AppState extends ChangeNotifier {
     }
     _startDeepLinkListener();
     notifyListeners();
+    } catch (e, stack) {
+      debugPrint('AppState.init FATAL: $e\n$stack');
+      _error = 'Startup error: $e';
+      notifyListeners();
+    }
   }
 
   void _startDeepLinkListener() {
