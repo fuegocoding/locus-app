@@ -62,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117),
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Positioned.fill(
             child: MapWidget(key: _mapKey),
@@ -76,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!state.isOnline) _buildOfflineBanner(theme),
           if (showAudioError) _buildAudioErrorBanner(state, theme),
           if (state.pinnedByMessage != null) _buildPinnedBanner(state, theme),
-          _buildInviteBanner(state, theme),
+          if (state.pendingInvites.isNotEmpty) _buildInviteBanner(state, theme),
 
           if (state.mode == 'proximity')
             Positioned(

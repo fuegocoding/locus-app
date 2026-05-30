@@ -123,8 +123,15 @@ class _AppEntryState extends State<AppEntry> {
   }
 
   Future<void> _init() async {
-    await context.read<AppState>().init();
-    if (mounted) setState(() => _initialized = true);
+    try {
+      await context.read<AppState>().init();
+    } catch (e, stack) {
+      debugPrint('Unhandled startup exception: $e\n$stack');
+    } finally {
+      if (mounted) {
+        setState(() => _initialized = true);
+      }
+    }
   }
 
   @override

@@ -13,15 +13,28 @@ class ApiService {
   ApiService({required this.baseUrl});
 
   Future<void> loadToken() async {
-    authToken = await _storage.read(key: 'auth_token');
+    try {
+      authToken = await _storage.read(key: 'auth_token');
+    } catch (e) {
+      print('[ApiService] Failed to read auth_token from storage: $e');
+      authToken = null;
+    }
   }
   Future<void> saveToken(String token) async {
     authToken = token;
-    await _storage.write(key: 'auth_token', value: token);
+    try {
+      await _storage.write(key: 'auth_token', value: token);
+    } catch (e) {
+      print('[ApiService] Failed to write auth_token to storage: $e');
+    }
   }
   Future<void> clearToken() async {
     authToken = null;
-    await _storage.delete(key: 'auth_token');
+    try {
+      await _storage.delete(key: 'auth_token');
+    } catch (e) {
+      print('[ApiService] Failed to delete auth_token from storage: $e');
+    }
   }
   bool get hasToken => authToken != null;
   Map<String, String> get _headers => {

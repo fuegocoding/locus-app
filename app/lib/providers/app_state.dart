@@ -111,76 +111,90 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    await apiService.loadToken();
-    final prefs = await SharedPreferences.getInstance();
-
-    // OverlayService is Android-only; safe to silently fail on other platforms
     try {
-      OverlayService.init();
-      OverlayService.micToggledStream.listen((muted) {
-        if (_micMuted != muted) {
-          _micMuted = muted;
-          socketService.toggleMic(_micMuted);
-          audioService.setMuted(_micMuted);
-          notifyListeners();
-        }
-      });
-    } catch (_) {
-      // Overlay not available on this platform
-    }
+      await apiService.loadToken();
+      final prefs = await SharedPreferences.getInstance();
 
-    // Load last cached coordinates immediately to prevent New York map jump
-    final lastLat = prefs.getDouble('last_latitude');
-    final lastLng = prefs.getDouble('last_longitude');
-    if (lastLat != null && lastLng != null) {
-      _latitude = lastLat;
-      _longitude = lastLng;
-    }
-
-    if (apiService.hasToken) {
-      final cachedProfile = prefs.getString('cached_profile');
-      if (cachedProfile != null) {
-        try {
-          _user = User.fromJson(jsonDecode(cachedProfile));
-          _isAuthenticated = true;
-        } catch (_) {}
+      // OverlayService is Android-only; safe to silently fail on other platforms
+      try {
+        OverlayService.init();
+        OverlayService.micToggledStream.listen((muted) {
+          if (_micMuted != muted) {
+            _micMuted = muted;
+            socketService.toggleMic(_micMuted);
+            audioService.setMuted(_micMuted);
+            notifyListeners();
+          }
+        });
+      } catch (_) {
+        // Overlay not available on this platform
       }
 
-      try {
-        final p = await apiService.getProfile();
-        if (p != null) {
-          _user = User.fromJson(p);
-          _isAuthenticated = true;
-          await prefs.setString('cached_profile', jsonEncode(p));
-          _connectSocket();
-          initPushNotifications();
-          loadFriends();
-          loadPendingInvites();
-        }
-      } catch (e) {
-        if (e is AuthException) {
-          _error = 'Session expired';
-          _isAuthenticated = false;
-          _user = null;
-          await apiService.clearToken();
-        } else {
-          // Network or server error: do NOT log out!
-          _error = 'Connecting offline...';
-          _connectSocket();
-          if (_user != null) {
+      // Load last cached coordinates immediately to prevent New York map jump
+      final lastLat = prefs.getDouble('last_latitude');
+      final lastLng = prefs.getDouble('last_longitude');
+      if (lastLat != null && lastLng != null) {
+        _latitude = lastLat;
+        _longitude = lastLng;
+      }
+
+      if (apiService.hasToken) {
+        final cachedProfile = prefs.getString('cached_profile');
+        if (cachedProfile != null) {
+          try {
+            _user = User.fromJson(jsonDecode(cachedProfile));
             _isAuthenticated = true;
+          } catch (_) {}
+        }
+
+        try {
+          final p = await apiService.getProfile();
+          if (p != null) {
+            _user = User.fromJson(p);
+            _isAuthenticated = true;
+            await prefs.setString('cached_profile', jsonEncode(p));
+            _connectSocket();
+            initPushNotifications();
+            loadFriends();
+            loadPendingInvites();
+          }
+        } catch (e) {
+          if (e is AuthException) {
+            _error = 'Session expired';
+            _isAuthenticated = false;
+            _user = null;
+            await apiService.clearToken();
+          } else {
+            // Network or server error: do NOT log out!
+            _error = 'Connecting offline...';
+            _connectSocket();
+            if (_user != null) {
+              _isAuthenticated = true;
+            }
           }
         }
       }
+      _startDeepLinkListener();
+      notifyListeners();
+    } catch (e, stack) {
+      debugPrint('AppState.init FATAL: $e\n$stack');
+      _error = 'Startup error: $e';
+      notifyListeners();
     }
-    _startDeepLinkListener();
-    notifyListeners();
   }
 
   void _startDeepLinkListener() {
-    final appLinks = AppLinks();
-    appLinks.getInitialLink().then(_handleDeepLink);
-    appLinks.uriLinkStream.listen(_handleDeepLink);
+    try {
+      final appLinks = AppLinks();
+      appLinks.getInitialLink().then(_handleDeepLink).catchError((err) {
+        debugPrint('[AppLinks] Failed to get initial link: $err');
+      });
+      appLinks.uriLinkStream.listen(_handleDeepLink, onError: (err) {
+        debugPrint('[AppLinks] Deep link stream error: $err');
+      });
+    } catch (e, stack) {
+      debugPrint('[AppLinks] Failed to initialize deep link listener: $e\n$stack');
+    }
   }
 
   void _handleDeepLink(Uri? uri) {
