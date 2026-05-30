@@ -5,7 +5,6 @@ import '../models/user.dart';
 class SocketService {
   io.Socket? _socket;
   final _presenceController = StreamController<List<PresenceUpdate>>.broadcast();
-  final _presenceReplaceController = StreamController<List<PresenceUpdate>>.broadcast();
   final _presenceRemoveController = StreamController<String>.broadcast();
   final _volumeController = StreamController<Map<String, double>>.broadcast();
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
@@ -19,7 +18,6 @@ class SocketService {
   final _pinnedYouController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
-  Stream<List<PresenceUpdate>> get presenceReplaceStream => _presenceReplaceController.stream;
   Stream<String> get presenceRemoveStream => _presenceRemoveController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
   Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
@@ -59,7 +57,7 @@ class SocketService {
 
     _socket!.on('presence:neighbors', (data) {
       final list = (data as List).map((p) => PresenceUpdate.fromJson(p)).toList();
-      _presenceReplaceController.add(list);
+      _presenceController.add(list);
     });
 
     _socket!.on('presence:update', (data) {
@@ -211,7 +209,6 @@ class SocketService {
   void dispose() {
     disconnect();
     _presenceController.close();
-    _presenceReplaceController.close();
     _presenceRemoveController.close();
     _volumeController.close();
     _speakingController.close();
