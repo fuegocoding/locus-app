@@ -69,10 +69,16 @@ export default async function JoinPage({ params }: PageProps) {
               <p className="text-sm text-muted">
                 Open Locus on your phone to join this convoy.
               </p>
+              <a
+                href={`locus://convoy/${code}`}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-convoy text-white rounded-xl font-bold text-sm hover:bg-convoy/90 transition-all"
+              >
+                Open in Locus App <ArrowRight className="w-4 h-4" />
+              </a>
               <div className="flex justify-center">
                 <div className="bg-white p-3 rounded-xl shadow-lg inline-block">
                   <QRCodeSVG
-                    value={`https://locus.wtf/convoy/${code}`}
+                    value={`locus://convoy/${code}`}
                     size={140}
                     level="M"
                     fgColor="#0D1117"
@@ -82,7 +88,7 @@ export default async function JoinPage({ params }: PageProps) {
               <p className="text-xs text-muted">Scan to open in the app</p>
               <Link
                 href="/app/download"
-                className="flex items-center justify-center gap-2 w-full py-3 bg-convoy text-white rounded-xl font-bold text-sm hover:bg-convoy/90 transition-all"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-surface border border-border text-foreground rounded-xl font-bold text-sm hover:bg-surface-raised transition-all"
               >
                 Download Locus <Download className="w-4 h-4" />
               </Link>

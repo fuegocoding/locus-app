@@ -5,7 +5,7 @@ import * as redis from '../services/redis';
 import * as livekit from '../services/livekit';
 import * as proximity from '../services/proximity';
 import { generateInviteCode } from '../services/auth';
-import type { ClientToServerEvents, ServerToClientEvents } from '../types';
+import type { ClientToServerEvents, ServerToClientEvents, PresenceUpdate } from '../types';
 import { prisma } from '../services/db';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -139,7 +139,6 @@ export function setupSocketHandlers(io: TypedServer): void {
       if (!user) return;
 
       if (data.mode === 'convoy' && data.convoyId) {
-        // Verify user is a member of the convoy before switching
         const membership = await prisma.convoyMembership.findUnique({
           where: { convoyId_userId: { convoyId: data.convoyId, userId: user.userId } }
         });
@@ -158,18 +157,37 @@ export function setupSocketHandlers(io: TypedServer): void {
         user.mode = 'convoy';
         user.convoyId = data.convoyId;
 
-        const token = await livekit.generateToken(data.convoyId, user.userId);
+        const convoy = await redis.getConvoy(data.convoyId);
+        const livekitRoom = (convoy as any)?.livekitRoom || `convoy:${data.convoyId}`;
+        const token = await livekit.generateToken(livekitRoom, user.userId);
         socket.emit('audio:token', {
-          room: data.convoyId,
+          room: livekitRoom,
           token,
           serverUrl: livekit.getLiveKitUrl(),
           identity: user.userId,
         });
 
-        const convoy = await redis.getConvoy(data.convoyId);
         const members = await redis.getConvoyMembers(data.convoyId);
         if (convoy) {
           socket.emit('convoy:joined', { convoy: convoy as any, members: members as any });
+        }
+
+        for (const [sid, cu] of connectedUsers) {
+          if (cu.convoyId === data.convoyId && cu.userId !== user.userId) {
+            io.to(sid).emit('convoy:member-joined', {
+              userId: user.userId,
+              latitude: user.latitude,
+              longitude: user.longitude,
+              speed: user.speed,
+              heading: user.heading,
+              privacyMode: 'open',
+              mode: 'convoy',
+              convoyId: data.convoyId,
+              displayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
+              anonymousMode: user.anonymousMode,
+              timestamp: Date.now(),
+            });
+          }
         }
       } else if (data.mode === 'proximity') {
         user.mode = 'proximity';
@@ -616,22 +634,35 @@ async function handleConvoyPresenceBroadcast(
   user: ConnectedUser,
   io: TypedServer
 ): Promise<void> {
-  const members = await redis.getConvoyMembers(user.convoyId!);
+  const presenceData: PresenceUpdate = {
+    userId: user.userId,
+    latitude: user.latitude,
+    longitude: user.longitude,
+    speed: user.speed,
+    heading: user.heading,
+    privacyMode: 'open',
+    mode: 'convoy',
+    convoyId: user.convoyId,
+    displayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
+    anonymousMode: user.anonymousMode,
+    timestamp: Date.now(),
+  };
+
   for (const [sid, cu] of connectedUsers) {
     if (cu.convoyId === user.convoyId && cu.userId !== user.userId) {
-      io.to(sid).emit('presence:update', {
-        userId: user.userId,
-        latitude: user.latitude,
-        longitude: user.longitude,
-        speed: user.speed,
-        heading: user.heading,
-        privacyMode: 'open',
-        mode: 'convoy',
-        convoyId: user.convoyId,
-        displayName: user.anonymousMode ? getAnonymousName(user.userId) : (user.displayName || `User_${user.userId.slice(0, 6)}`),
-        anonymousMode: user.anonymousMode,
-        timestamp: Date.now(),
-      });
+      io.to(sid).emit('presence:update', presenceData);
+    }
+  }
+
+  if (user.privacyMode !== 'invisible' && user.privacyMode !== 'convoy-only') {
+    const nearbyUsers = await redis.getNearbyUsers(user.latitude, user.longitude, 5.0, [user.userId]);
+    for (const nearby of nearbyUsers) {
+      if (nearby.mode === 'proximity') {
+        const nearbySocketId = getSocketIdByUserId(nearby.userId);
+        if (nearbySocketId) {
+          io.to(nearbySocketId).emit('presence:update', presenceData);
+        }
+      }
     }
   }
 }

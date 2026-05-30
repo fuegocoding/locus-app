@@ -56,17 +56,9 @@ class _QrScanScreenState extends State<QrScanScreen> with WidgetsBindingObserver
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
-          ValueListenableBuilder(
-            valueListenable: _controller.torchState,
-            builder: (context, state, child) {
-              return IconButton(
-                icon: Icon(
-                  state == TorchState.on ? Icons.flash_on : Icons.flash_off,
-                  color: Colors.white70,
-                ),
-                onPressed: () => _controller.toggleTorch(),
-              );
-            },
+          IconButton(
+            icon: const Icon(Icons.flash_off, color: Colors.white70),
+            onPressed: () => _controller.toggleTorch(),
           ),
         ],
       ),
