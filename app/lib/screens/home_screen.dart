@@ -47,13 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final bool showAudioError = state.isAuthenticated &&
         !state.isAudioConnected &&
+        !state.isAudioConnecting &&
         (state.mode == 'convoy' || state.nearbyUsers.isNotEmpty);
 
     double proximityTop = topPad + 58;
     if (!state.isOnline) proximityTop += 38;
     if (showAudioError) proximityTop += 38;
 
-    if (state.pendingConvoyCode != null) {
+    if (state.pendingConvoyCode != null && state.isAuthenticated && state.isOnline) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showJoinConvoyDialog(context, state, state.pendingConvoyCode!);
       });

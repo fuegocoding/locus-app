@@ -398,6 +398,7 @@ router.post('/convoy/invite', authMiddleware, async (req: AuthRequest, res: Resp
         io.to(receiverSocketId).emit('invite:received', {
           id: invite.id,
           convoyId: convoy.id,
+          inviteCode: convoy.inviteCode,
           convoyName: convoy.name,
           senderId: currentUserId,
           senderName: senderUser?.displayName || 'A friend',
@@ -437,6 +438,7 @@ router.get('/convoy/invites', authMiddleware, async (req: AuthRequest, res: Resp
         convoy: {
           select: {
             name: true,
+            inviteCode: true,
           },
         },
         sender: {
@@ -450,6 +452,7 @@ router.get('/convoy/invites', authMiddleware, async (req: AuthRequest, res: Resp
     const formattedInvites = invites.map((invite) => ({
       id: invite.id,
       convoyId: invite.convoyId,
+      inviteCode: invite.convoy.inviteCode,
       convoyName: invite.convoy.name,
       senderId: invite.senderId,
       senderName: invite.sender.displayName,

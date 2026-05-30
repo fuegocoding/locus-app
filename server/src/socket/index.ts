@@ -653,18 +653,6 @@ async function handleConvoyPresenceBroadcast(
       io.to(sid).emit('presence:update', presenceData);
     }
   }
-
-  if (user.privacyMode !== 'invisible' && user.privacyMode !== 'convoy-only') {
-    const nearbyUsers = await redis.getNearbyUsers(user.latitude, user.longitude, 5.0, [user.userId]);
-    for (const nearby of nearbyUsers) {
-      if (nearby.mode === 'proximity') {
-        const nearbySocketId = getSocketIdByUserId(nearby.userId);
-        if (nearbySocketId) {
-          io.to(nearbySocketId).emit('presence:update', presenceData);
-        }
-      }
-    }
-  }
 }
 
 async function handleDisconnect(

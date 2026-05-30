@@ -146,7 +146,7 @@ export async function getNearbyUsers(
   return presences
     .filter(Boolean)
     .map((p) => JSON.parse(p!))
-    .filter((p: PresenceUpdate) => p.privacyMode !== 'invisible' && p.privacyMode !== 'convoy-only');
+    .filter((p: PresenceUpdate) => p.mode !== 'convoy' && p.privacyMode !== 'invisible' && p.privacyMode !== 'convoy-only');
 }
 
 export async function isBlocked(blockerId: string, blockedId: string): Promise<boolean> {

@@ -76,6 +76,7 @@ class AppState extends ChangeNotifier {
   bool get pushToTalk => _pushToTalk;
   bool get isOnline => _isOnline;
   bool get isAudioConnected => audioService.isConnected;
+  bool get isAudioConnecting => audioService.isConnecting;
   bool get videoEnabled => _videoEnabled;
   Map<String, bool> get remoteVideoEnabled => _remoteVideoEnabled;
   String get resolvedSpeedUnit {
@@ -333,12 +334,25 @@ class AppState extends ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _pinnedSub;
   StreamSubscription<Map<String, dynamic>>? _inviteSub;
   StreamSubscription<Map<String, double>>? _positionSub;
+  StreamSubscription<bool>? _connectionSub;
+  StreamSubscription<bool>? _audioConnectionSub;
   DateTime _lastPositionNotify = DateTime(2000);
 
   void _connectSocket() {
     socketService.disconnect();
     socketService.connect(apiService.baseUrl, apiService.authToken ?? '');
     _startFriendLocationPolling();
+
+    _connectionSub?.cancel();
+    _connectionSub = socketService.connectionStream.listen((connected) {
+      _isOnline = connected;
+      notifyListeners();
+    });
+
+    _audioConnectionSub?.cancel();
+    _audioConnectionSub = audioService.connectionStream.listen((connected) {
+      notifyListeners();
+    });
 
     _presenceSub?.cancel();
     _presenceSub = socketService.presenceStream.listen((ups) {
@@ -380,10 +394,75 @@ class AppState extends ChangeNotifier {
         if (d['convoy'] != null) _currentConvoy = Convoy.fromJson(d['convoy']);
         _mode = 'convoy';
         _convoyId = _currentConvoy?.id;
+        _nearbyUsers.clear();
+        if (d['members'] != null) {
+          final List<dynamic> memberList = d['members'];
+          for (final m in memberList) {
+            final up = PresenceUpdate.fromJson(Map<String, dynamic>.from(m));
+            if (up.userId != _user?.id) {
+              _nearbyUsers.add(up);
+            }
+          }
+        }
       } else if (d['type'] == 'left') {
         _currentConvoy = null;
         _convoyId = null;
         _mode = 'proximity';
+        _nearbyUsers.clear();
+      } else if (d['type'] == 'member_joined') {
+        if (_currentConvoy != null) {
+          final userId = d['userId'] as String;
+          if (!_currentConvoy!.members.contains(userId)) {
+            final updatedMembers = List<String>.from(_currentConvoy!.members)..add(userId);
+            _currentConvoy = Convoy(
+              id: _currentConvoy!.id,
+              name: _currentConvoy!.name,
+              creatorId: _currentConvoy!.creatorId,
+              accessLevel: _currentConvoy!.accessLevel,
+              inviteCode: _currentConvoy!.inviteCode,
+              members: updatedMembers,
+              livekitRoom: _currentConvoy!.livekitRoom,
+              createdAt: _currentConvoy!.createdAt,
+            );
+          }
+        }
+        final up = PresenceUpdate(
+          userId: d['userId'] ?? '',
+          latitude: (d['latitude'] as num?)?.toDouble() ?? 0.0,
+          longitude: (d['longitude'] as num?)?.toDouble() ?? 0.0,
+          speed: (d['speed'] as num?)?.toDouble() ?? 0.0,
+          heading: (d['heading'] as num?)?.toDouble() ?? 0.0,
+          privacyMode: d['privacyMode'] ?? 'open',
+          mode: d['mode'] ?? 'convoy',
+          convoyId: d['convoyId'],
+          timestamp: (d['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
+          displayName: d['displayName'],
+          anonymousMode: d['anonymousMode'] ?? false,
+        );
+        final idx = _nearbyUsers.indexWhere((x) => x.userId == up.userId);
+        if (idx >= 0) {
+          _nearbyUsers[idx] = up;
+        } else {
+          _nearbyUsers.add(up);
+        }
+      } else if (d['type'] == 'member_left') {
+        final userId = d['userId'] as String;
+        if (_currentConvoy != null) {
+          if (_currentConvoy!.members.contains(userId)) {
+            final updatedMembers = List<String>.from(_currentConvoy!.members)..remove(userId);
+            _currentConvoy = Convoy(
+              id: _currentConvoy!.id,
+              name: _currentConvoy!.name,
+              creatorId: _currentConvoy!.creatorId,
+              accessLevel: _currentConvoy!.accessLevel,
+              inviteCode: _currentConvoy!.inviteCode,
+              members: updatedMembers,
+              livekitRoom: _currentConvoy!.livekitRoom,
+              createdAt: _currentConvoy!.createdAt,
+            );
+          }
+        }
+        _nearbyUsers.removeWhere((x) => x.userId == userId);
       }
       notifyListeners();
     });
@@ -455,6 +534,7 @@ class AppState extends ChangeNotifier {
           _pendingInvites.add({
             'id': inviteId,
             'convoyId': d['convoyId'],
+            'inviteCode': d['inviteCode'],
             'convoyName': d['convoyName'],
             'senderId': d['senderId'],
             'senderName': d['senderName'],
@@ -751,7 +831,7 @@ class AppState extends ChangeNotifier {
         final invite = _pendingInvites[inviteIndex];
         _pendingInvites.removeAt(inviteIndex);
         if (status == 'accepted') {
-          joinConvoy(invite['convoyId']);
+          joinConvoy(invite['inviteCode'] ?? invite['convoyId']);
         }
       }
       notifyListeners();
@@ -769,6 +849,8 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _presenceRemoveSub?.cancel();
+    _connectionSub?.cancel();
+    _audioConnectionSub?.cancel();
     socketService.dispose();
     locationService.dispose();
     audioService.dispose();

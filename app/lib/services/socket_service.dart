@@ -16,6 +16,7 @@ class SocketService {
   final _accountDeletedController = StreamController<void>.broadcast();
   final _friendLocationController = StreamController<Map<String, dynamic>>.broadcast();
   final _pinnedYouController = StreamController<Map<String, dynamic>>.broadcast();
+  final _connectionController = StreamController<bool>.broadcast();
 
   Stream<List<PresenceUpdate>> get presenceStream => _presenceController.stream;
   Stream<String> get presenceRemoveStream => _presenceRemoveController.stream;
@@ -29,6 +30,7 @@ class SocketService {
   Stream<void> get accountDeletedStream => _accountDeletedController.stream;
   Stream<Map<String, dynamic>> get friendLocationStream => _friendLocationController.stream;
   Stream<Map<String, dynamic>> get pinnedYouStream => _pinnedYouController.stream;
+  Stream<bool> get connectionStream => _connectionController.stream;
 
   bool get connected => _socket?.connected ?? false;
 
@@ -45,14 +47,17 @@ class SocketService {
 
     _socket!.on('connect', (_) {
       print('[Socket] Connected');
+      _connectionController.add(true);
     });
 
     _socket!.on('disconnect', (_) {
       print('[Socket] Disconnected');
+      _connectionController.add(false);
     });
 
     _socket!.on('reconnect', (_) {
       print('[Socket] Reconnected');
+      _connectionController.add(true);
     });
 
     _socket!.on('presence:neighbors', (data) {
@@ -208,6 +213,7 @@ class SocketService {
 
   void dispose() {
     disconnect();
+    _connectionController.close();
     _presenceController.close();
     _presenceRemoveController.close();
     _volumeController.close();

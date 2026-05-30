@@ -25,6 +25,7 @@ class AudioService {
   Stream<String> get speakingStream => _speakingController.stream;
   Stream<Map<String, double>> get volumeStream => _volumeController.stream;
   bool get isConnected => _isConnected;
+  bool get isConnecting => _isConnecting;
   bool get isMuted => _isMuted;
   bool get pushToTalk => _pushToTalk;
   bool get isSpeaking => _isSpeaking;
